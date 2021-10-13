@@ -9,6 +9,8 @@ These model instances can be used to generate synopsis data or to estimate aggre
 * [TrainDB](https://github.com/traindb-project/traindb-prototype)
 * Python 3.x
 * [SDGym](https://github.com/sdv-dev/SDGym)
+  * Using ```pip```: pip install sdgym
+  * Using ```conda```: conda install -c sdv-dev -c conda-forge sdgym
 
 ## Install
 
