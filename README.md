@@ -1,6 +1,4 @@
 # traindb-model
-ML models for TrainDB
-
 Using these ML models, you can train model instances in ```TrainDB```.
 These model instances can be used to generate synopsis data or to estimate aggregate values in approximate query processing.
 
@@ -18,6 +16,7 @@ These model instances can be used to generate synopsis data or to estimate aggre
 
 In ```$TRAINDB_PREFIX``` directory, run the following command:
 ```console
+$ cd $TRAINDB_PREFIX
 $ svn co https://github.com/traindb-project/traindb-model/trunk/models
 ```
 
