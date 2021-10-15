@@ -24,7 +24,7 @@ $ svn co https://github.com/traindb-project/traindb-model/trunk/models
 
 ### Example
 
-You can run SQL-like statements via ```trsql``` in ```TrainDB```
+You can run SQL-like statements via ```trsql``` in ```TrainDB```.
 ```
 $ bin/trsql
 sqlline> !connect jdbc:traindb:<dbms>://<host>
@@ -36,4 +36,7 @@ No rows affected (0.255 seconds)
 epoch 1 step 50 tensor(1.1035, grad_fn=<SubBackward0>) tensor(0.7770, grad_fn=<NegBackward>) None
 epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<NegBackward>) None
 ...
+0: jdbc:traindb:<dbms>://<host>> CREATE SYNOPSIS <synopsis> FROM MODEL INSTANCE tgan LIMIT <# of rows to generate>;
+...
+0: jdbc:traindb:<dbms>://<host>> SELECT avg(<column>) FROM <synopsis>;
 ```
