@@ -1,5 +1,4 @@
-# traindb-ml
-RSPN Testing
+# RSPN Testing
 
 ## Environment
 Python 3.8 on Ubuntu 20.04
