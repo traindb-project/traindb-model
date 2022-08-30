@@ -6,11 +6,11 @@ import numpy as np
 from spn.structure.Base import Context
 from spn.structure.StatisticalTypes import MetaType
 
-from rspn.algorithms.expectations import expectation
-from rspn.algorithms.ranges import NominalRange, NumericRange
-from rspn.algorithms.validity.validity import is_valid
-from rspn.learning.rspn_learning import learn_mspn
-from rspn.structure.leaves import IdentityNumericLeaf, identity_expectation, Categorical, categorical_likelihood_range, \
+from rspn.rspn.algorithms.expectations import expectation
+from rspn.rspn.algorithms.ranges import NominalRange, NumericRange
+from rspn.rspn.algorithms.validity.validity import is_valid
+from rspn.rspn.learning.rspn_learning import learn_mspn
+from rspn.rspn.structure.leaves import IdentityNumericLeaf, identity_expectation, Categorical, categorical_likelihood_range, \
     identity_likelihood_range
 
 logger = logging.getLogger(__name__)

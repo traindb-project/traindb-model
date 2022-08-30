@@ -8,9 +8,9 @@ import numpy as np
 from spn.algorithms.StructureLearning import default_slicer
 from spn.structure.Base import assign_ids, Product
 
-from rspn.algorithms.transform_structure import Prune
-from rspn.algorithms.validity.validity import is_valid
-from rspn.structure.base import Sum
+from rspn.rspn.algorithms.transform_structure import Prune
+from rspn.rspn.algorithms.validity.validity import is_valid
+from rspn.rspn.structure.base import Sum
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ except:
 
     perf_counter = time
 
-parallel = True
+parallel = False
 
 if parallel:
     cpus = max(1, os.cpu_count() - 2)  # - int(os.getloadavg()[2])

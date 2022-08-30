@@ -8,8 +8,8 @@ from spn.structure.StatisticalTypes import MetaType
 
 import os
 
-from rspn.structure.base import Sum
-from rspn.structure.leaves import Categorical, IdentityNumericLeaf
+from rspn.rspn.structure.base import Sum
+from rspn.rspn.structure.leaves import Categorical, IdentityNumericLeaf
 
 logger = logging.getLogger(__name__)
 

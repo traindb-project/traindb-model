@@ -6,7 +6,8 @@ from spn.algorithms.splitting.Base import preproc, split_data_by_clusters
 from spn.algorithms.splitting.RDC import getIndependentRDCGroups_py
 from spn.structure.StatisticalTypes import MetaType
 
-from rspn.structure.leaves import IdentityNumericLeaf, Categorical
+from aqp_spn.aqp_leaves import Categorical
+from aqp_spn.aqp_leaves import IdentityNumericLeaf
 
 logger = logging.getLogger(__name__)
 MAX_UNIQUE_LEAF_VALUES = 10000
@@ -21,14 +22,16 @@ def learn_mspn(
         threshold=0.3,
         max_sampling_threshold_cols=10000,
         max_sampling_threshold_rows=100000,
+        bloom_filters=False,
         ohe=False,
         leaves=None,
         memory=None,
         rand_gen=None,
-        cpus=-1
+        cpus=-1,
 ):
     """
     Adapts normal learn_mspn to use custom identity leafs and use sampling for structure learning.
+    :param bloom_filters:
     :param max_sampling_threshold_rows:
     :param max_sampling_threshold_cols:
     :param data:
@@ -50,7 +53,7 @@ def learn_mspn(
     if rand_gen is None:
         rand_gen = np.random.RandomState(17)
 
-    from rspn.learning.structure_learning import get_next_operation, learn_structure
+    from aqp_spn.custom_spflow.custom_structure_learning import get_next_operation, learn_structure
 
     def l_mspn(data, ds_context, cols, rows, min_instances_slice, threshold, ohe):
         split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols,
@@ -58,7 +61,7 @@ def learn_mspn(
 
         nextop = get_next_operation(min_instances_slice)
 
-        node = learn_structure(data, ds_context, split_rows, split_cols, leaves, next_operation=nextop)
+        node = learn_structure(bloom_filters, data, ds_context, split_rows, split_cols, leaves, next_operation=nextop)
         return node
 
     if memory:
@@ -97,8 +100,48 @@ def create_custom_leaf(data, ds_context, scope):
             probs = np.array(counts, np.float64) / len(data[:, 0])
             lidx = len(probs) - 1
 
+        # cumulative sum to make inference faster
+        prob_sum = np.concatenate([[0], np.cumsum(probs)])
+
         null_value = ds_context.null_values[idx]
-        leaf = IdentityNumericLeaf(unique_vals, probs, null_value, scope, cardinality=data.shape[0])
+        zero_in_dataset = data.shape[0] != np.count_nonzero(data[:, 0])
+
+        not_null_indexes = np.where(data[:, 0] != null_value)[0]
+
+        # This version also removes 0 (for inverted (square) mean)
+        # not_null_indexes = np.where((data[:, 0] != null_value) & (data[:, 0] != 0.0))[0]
+
+        null_value_prob = 1 - len(not_null_indexes) / len(data[:, 0])
+
+        # all values NAN
+        if len(not_null_indexes) == 0:
+            mean = 0
+            inverted_mean = np.nan
+
+            # for variance computation
+            square_mean = 0
+            inverted_square_mean = np.nan
+        # some values nan
+        else:
+            mean = np.mean(data[not_null_indexes, 0])
+            if zero_in_dataset:
+                inverted_mean = np.nan
+            else:
+                inverted_mean = np.mean(1 / data[not_null_indexes, 0])
+
+            # for variance computation
+            square_mean = np.mean(np.square(data[not_null_indexes, 0]))
+            if zero_in_dataset:
+                inverted_square_mean = np.nan
+            else:
+                inverted_square_mean = np.mean(1 / np.square(data[not_null_indexes, 0]))
+
+        leaf = IdentityNumericLeaf(unique_vals, mean, inverted_mean, square_mean, inverted_square_mean, prob_sum,
+                                   null_value_prob, scope=scope)
+        from aqp_spn.custom_spflow.custom_validity import is_valid_prob_sum
+        leaf.cardinality = data.shape[0]
+        ok, err = is_valid_prob_sum(prob_sum, unique_vals, leaf.cardinality)
+        assert ok, err
 
         return leaf
 
@@ -110,8 +153,8 @@ def create_custom_leaf(data, ds_context, scope):
         for i, x in enumerate(unique):
             sorted_counts[int(x)] = counts[i]
         p = sorted_counts / data.shape[0]
-        null_value = ds_context.null_values[idx]
-        node = Categorical(p, null_value, scope, cardinality=data.shape[0])
+        node = Categorical(p, scope)
+        node.cardinality = data.shape[0]
 
         return node
 

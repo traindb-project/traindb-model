@@ -5,8 +5,8 @@ import numpy as np
 from spn.algorithms.Inference import likelihood
 from spn.structure.Base import Product
 
-from rspn.code_generation.convert_conditions import convert_range
-from rspn.structure.base import Sum
+from rspn.rspn.code_generation.convert_conditions import convert_range
+from rspn.rspn.structure.base import Sum
 
 logger = logging.getLogger(__name__)
 

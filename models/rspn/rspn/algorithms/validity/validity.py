@@ -4,8 +4,8 @@ import numpy as np
 from math import isclose
 from spn.structure.Base import get_nodes_by_type, Product, assign_ids, Leaf, eval_spn_bottom_up
 
-from rspn.structure.base import Sum
-from rspn.structure.leaves import IdentityNumericLeaf, Categorical
+from rspn.rspn.structure.base import Sum
+from rspn.rspn.structure.leaves import IdentityNumericLeaf, Categorical
 
 logger = logging.getLogger(__name__)
 
