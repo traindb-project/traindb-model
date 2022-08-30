@@ -1,5 +1,5 @@
 # traindb-ml
-Remote ML Model Serving Component for TrainDB
+RSPN Testing
 
 ## Environment
 Python 3.8 on Ubuntu 20.04
@@ -20,7 +20,7 @@ Python 3.8 on Ubuntu 20.04
 
 3. Install dependencies. For example,
 ```
-(venv) # pip install numpy pandas tables spflow, sqlparse, psycopg2, 
+(venv) # pip install numpy pandas tables spflow, sqlparse, psycopg2
 // If you want to use REST interface (Fast API), install the followings as well
 (venv) # pip install fastapi uvicorn requests
 // Here 'pip' means 'pip3', and it's the same as the following:
@@ -29,10 +29,18 @@ Python 3.8 on Ubuntu 20.04
 ## Running Option1: TrainDBCliModelRunner
 ### Training
 ```
-(venv) # python3 TrainDBCliModelRunner.py train2 RSPN model/types/RSPN.py instacart /home/nam/Projects/datasets/instacart/orders.csv data/files/ model/instances
+(venv) # python3 TrainDBCliModelRunner.py train2 RSPN model/types/RSPN.py instacart /data/instacart/orders.csv data/files/ model/instances
 
 (some warnings...)
 ```
+- train2: command for RSPN testing
+- modeltype_class: name of the model (class) (ex, RSPN)
+- modeltype_uri: path for the model class file (ex, model/types/RSPN.py)
+- data_name: name(space) of the training dataset, (ex, instacart)
+- data_file: path to the training dataset, /path/to/namespace/tablename.csv (ex, /data/instacart/orders.csv)
+- metadata_root: root dir of the metadata(.json or .hdf) (to be modified)
+- model_path: (root) path to the generated model (ex, model/instances)
+
 ### Estimation
 ...
 
