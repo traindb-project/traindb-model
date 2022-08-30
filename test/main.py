@@ -34,6 +34,8 @@ import uvicorn
 class Target(BaseModel):
     dataset: str
     csv_path: str
+    metadata_path: str
+    model_path: str
 
 app = FastAPI()
 schema = None
@@ -41,16 +43,38 @@ dataset_hdf_path = 'data/files/instacart/hdf'
 table_csv_path = 'data/files/instacart/csv'+'{}.csv'
 
 @app.post("/train/")
-async def app_train(target: Target):
-    schema = data_preparation(target.dataset, target.csv_path)
-    result = train(schema)
-    return {"Created": result, "Status": "OK"}
+async def aqp_train(target: Target):
+    """
+    Learn the given dataset
+    :param dataset: name of model/dataset (e.g., instacart)
+    :param dataset_path: location of the dataset(.csv) (e.g., ~/Projects/datasets/instacart/orders.csv)
+    :param metadata_path: root of the .hdf and .csv to be generated(or copied) (e.g., data/files/)
+    :param model_path: location of the model (.pkl) to be generated (e.g., model/instances)
+    :returns: path of the generated model(.pkl) if suceess
+    """
+    schema, dataset_hdf_path, table_csv_path = \
+        data_preparation(target.dataset, target.csv_path, target.metadata_path)
+    model_path =\
+        generate_rspn(schema=schema, 
+                      dataset=target.dataset, 
+                      ensemble_path=target.model_path,
+                      hdf_path=dataset_hdf_path, 
+                      strategy='single')
+    return {"Created": model_path, "Status": "OK"}
 
 @app.get("/estimate/")
-def aqp_read(query: str, dataset: str, ensemble_location: str, show_confidence_intervals: bool):
+def aqp_read(query: str, dataset: str, table_csv_path: str, model_path: str, show_confidence_intervals: bool):
+    """
+    Estimnate the given aggregation query
+    :param query: the SQL statement
+    :param dataset: name of model/dataset (e.g., instacart)
+    :param table_csv_path: location of the table (.csv) (e.g., data/files/instacart/csv/orders.csv)
+    :param model_path: model(.pkl) path (e.g., model/instances/ensemble_single_instacart_10000000.pkl)
+    :returns: approximated value
+    """
     #if schema is None:
     #    return {"Result":"The schema is not available"}
-    value = estimate(schema, dataset, query, ensemble_location, show_confidence_intervals)
+    value = estimate(schema, dataset, query, table_csv_path, model_path, show_confidence_intervals)
     return {"Query": query, "Estimated Value": value}
 
 @app.put("/update/")
@@ -77,28 +101,28 @@ def startup_event():
 # Main Features
 #####
 
-def data_preparation(dataset, csv_path):
+def data_preparation(dataset, csv_path, metadata_path):
     """
     Prepares the learing dataset for training process
-     See, deepdb/maqp.py, schema.py
+    It uses the 'data' directory (e.g. data/files/csv/)
+    See, deepdb/maqp.py, schema.py
     :param dataset:
     :param csv_path:
-    :return:
+    :param metadata_path: root of .hdf/.csv to be generated/copied (e.g., data/files/)
+    :return schema:
     """
 
     # - setup directories
     logger.info( "Data Preparation: ")
-    dataset_path = "data/files/" + dataset
+    dataset_path = metadata_path + dataset
     dataset_csv_path = dataset_path + "/csv/"
-    dataset_hdf_path = dataset_path + "/hdf/" # XXX set global var
+    dataset_hdf_path = dataset_path + "/hdf/"
     logger.info(f" - Setup Directories: input_csv_path: {csv_path}, dataset_path: {dataset_path}")
-
     logger.info(f" - Making csv path {dataset_csv_path}")
     os.makedirs(dataset_csv_path, exist_ok=True)
 
     # - extract the filename from the csv_path and make a target path
-    csv_target_filename = os.path.basename(csv_path)
-    csv_target_path = dataset_csv_path + csv_target_filename
+    csv_target_path = dataset_csv_path + os.path.basename(csv_path)
 
     # - copy the input csv file into the target path (overwrite if already exists)
     # TODO handle the case when the csv doesn't exist
@@ -141,14 +165,17 @@ def data_preparation(dataset, csv_path):
     prepare_all_tables(schema, dataset_hdf_path, csv_seperator=',', max_table_data=20000000)
     logger.info(f"Metadata(HDF files) successfully created")
 
-    return schema
+    return schema, dataset_hdf_path, table_csv_path
 
 
-def train(schema, dataset='instacart', ensemble_path='model/instances',
-          strategy='single', rdc_threshold=0.3,
-          samples_per_spn=10000000, bloom_filters=True, 
-          max_rows_per_hdf_file=20000000, post_sampling_factor=30,
-          incremental_learning_rate=0, incremental_condition=''):
+def generate_rspn(schema, 
+                  dataset='instacart', 
+                  ensemble_path='model/instances',
+                  hdf_path='data/files/instacart/hdf/',
+                  strategy='single', rdc_threshold=0.3,
+                  samples_per_spn=10000000, bloom_filters=True, 
+                  max_rows_per_hdf_file=20000000, post_sampling_factor=30,
+                  incremental_learning_rate=0, incremental_condition=''):
     # TODO: add another strategies (e.g. relationship, rdc_based)
     # TODO: update
     """
@@ -167,7 +194,6 @@ def train(schema, dataset='instacart', ensemble_path='model/instances',
     :return:
     """
     
-
     logger.info(f"TRAIN RSPNs")
     if not os.path.exists(ensemble_path):
         os.makedirs(ensemble_path)
@@ -176,7 +202,7 @@ def train(schema, dataset='instacart', ensemble_path='model/instances',
     if strategy == 'single': 
         logger.info(f" - learn RSPNs by 'single' strategy")
         instance_path = \
-            create_naive_all_split_ensemble(schema, dataset_hdf_path, 
+            create_naive_all_split_ensemble(schema, hdf_path, 
                                             samples_per_spn, ensemble_path,
                                             dataset, bloom_filters, 
                                             rdc_threshold, 
@@ -187,25 +213,30 @@ def train(schema, dataset='instacart', ensemble_path='model/instances',
     logger.info(f" - create instance path (if not exists): {instance_path}")
     return instance_path
 
-
-def estimate(schema, dataset, query, ensemble_location, show_confidence_intervals):
+def estimate(schema, dataset, query, table_csv_path, model_path, show_confidence_intervals):
     """
     Estimate the aggregation of the given query
     :param schema:
+    :param dataset:
     :param query:
-    :param ensemble_location:
+    :param model_path:
     :param show_confidence_intervals:
     :return:
     """
     # FIXME: incorrect answer (3421083 vs 9853061) 
+    # TODO: add SUM and AVG
+    # TODO: single table --> ensemble of tables
+    # TODO: query --> components
 
-    if schema is None and dataset == 'instacart':
-        schema = gen_instacart_schema(table_csv_path) # XXX set global var
+    # XXX: seems like weird dependency...
+    #if schema is None and dataset == 'instacart':
+    #    schema = gen_instacart_schema(table_csv_path)
+    if dataset == 'instacart':
+        schema = gen_instacart_schema(table_csv_path)
 
-    logger.info(f"ESTIMATE Aggregations")
-    query = "SELECT COUNT(*) FROM orders" #"SELECT SUM(order_id) FROM orders"
-    ensemble_location = args.ensemble_location
-    show_confidence_intervals = True
+    logger.info(f"ESTIMATE Aggregations: {query}")
+    ensemble_location = model_path
+    show_confidence_intervals = show_confidence_intervals
     logger.info(f" - Query: {query}, Model: {ensemble_location}")
     logger.info(f" - Show Confidence Intervals: {show_confidence_intervals}")
     result = evaluate_an_aqp_query(ensemble_location, query, schema, show_confidence_intervals)
