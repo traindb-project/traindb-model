@@ -18,8 +18,10 @@ def gen_instacart_schema(csv_path):
                                        'order_number', 'order_dow', 
                                        'order_hour_of_day', 'days_since_prior_order'],
                            table_size=28800991, 
+                           #table_size=34301, 
                            csv_file_location=csv_path.format('orders'),
                            sample_rate=10000000 / 28800991
+                           #sample_rate=10000 / 34301
                            ))
     return schema
 

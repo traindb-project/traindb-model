@@ -231,6 +231,7 @@ def estimate(schema, dataset, query, table_csv_path, model_path, show_confidence
     # XXX: seems like weird dependency...
     #if schema is None and dataset == 'instacart':
     #    schema = gen_instacart_schema(table_csv_path)
+    print(f'table_csv_path: {table_csv_path}')
     if dataset == 'instacart':
         schema = gen_instacart_schema(table_csv_path)
 
