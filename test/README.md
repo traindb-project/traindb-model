@@ -20,10 +20,11 @@ Python 3.8 on Ubuntu 20.04
 3. Install dependencies. For example,
 ```
 (venv) # pip install numpy pandas tables spflow, sqlparse, psycopg2
+
 // If you want to use REST interface (Fast API), install the followings as well
 (venv) # pip install fastapi uvicorn requests
-// Here 'pip' means 'pip3', and it's the same as the following:
-// (venv) # pip install -r requirements.txt
+
+// cf. requirements.txt
 ```
 ## Running Option1: TrainDBCliModelRunner
 ### Training
@@ -78,6 +79,9 @@ SELECT COUNT(*) FROM orders WHERE order_dow >= 2
 1. Execute the rest.py. 
 The default host address and port (http://0.0.0.0:8000) will be applied if no args specified.
 ```
+// run the following command if not installed
+// (venv) # pip install fastapi uvicorn requests
+
 (venv) # python3 rest.py
 
  // For setting up your own address/port (e.g., http://127.0.0.1:8080):
