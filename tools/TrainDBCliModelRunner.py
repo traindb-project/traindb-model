@@ -43,6 +43,13 @@ class TrainDBCliModelRunner():
     syn_data = model.synopsis(row_count)
     return syn_data
 
+  def infer(self, modeltype_class, modeltype_path, model_path, query_string):
+    mod = self._load_module(modeltype_class, modeltype_path)
+    model = getattr(mod, modeltype_class)()
+    model.load(model_path)
+    infer_results = model.infer(query_string)
+    return infer_results
+
 
 import argparse
 import pandas as pd
@@ -65,6 +72,12 @@ parser_synopsis.add_argument('model_path', type=str, help='(str) path to model')
 parser_synopsis.add_argument('row_count', type=int, help='(int) the number of rows to generate')
 parser_synopsis.add_argument('output_file', type=str, help='(str) path to save generated synopsis file')
 
+parser_synopsis = subparsers.add_parser('infer', help='inference model command')
+parser_synopsis.add_argument('modeltype_class', type=str, help='(str) modeltype class name')
+parser_synopsis.add_argument('modeltype_uri', type=str, help='(str) path for local model, or uri for remote model')
+parser_synopsis.add_argument('model_path', type=str, help='(str) path to model')
+parser_synopsis.add_argument('query_string', type=str, help='(str) query string to infer approximate results')
+
 args = root_parser.parse_args()
 runner = TrainDBCliModelRunner()
 if args.cmd == 'train':
@@ -78,6 +91,9 @@ if args.cmd == 'train':
 elif args.cmd == 'synopsis':
   syn_data = runner.generate_synopsis(args.modeltype_class, args.modeltype_uri, args.model_path, args.row_count)
   syn_data.to_csv(args.output_file, index=False)
+  sys.exit(0)
+elif args.cmd == 'infer':
+  syn_data = runner.infer(args.modeltype_class, args.modeltype_uri, args.model_path, args.query_string)
   sys.exit(0)
 else:
   root_parser.print_help()
