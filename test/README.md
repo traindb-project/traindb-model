@@ -7,8 +7,8 @@ Python 3.8 on Ubuntu 20.04
 ## Setting up
 1. Download the codes.
 ```
-# git clone https://github.com/traindb-project/traindb-ml.git
-# cd traindb-ml
+# git clone https://github.com/traindb-project/traindb-model.git
+# cd traindb-model/test
 ```
 2. (Option) Create a virtual environment (using venv or conda).
   - For venv: (See:https://docs.python.org/3/library/venv.html)
@@ -21,13 +21,14 @@ Python 3.8 on Ubuntu 20.04
 3. Install dependencies. For example,
 ```
 (venv) # pip install numpy pandas tables spflow, sqlparse, psycopg2, 
-// If you want to use the Fast API, install the followings as well
+// If you want to use REST interface (Fast API), install the followings as well
 (venv) # pip install fastapi uvicorn requests
 // Here 'pip' means 'pip3', and it's the same as the following:
 // (venv) # pip install -r requirements.txt
 ```
-## Test non-REST version
-1. Execute the test-model.py
+## Run
+1. Edit the test.py
+2. Run the test.py
 ```
 (venv) # python3 test.py
 (some warnings...)
