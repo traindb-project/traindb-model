@@ -29,20 +29,23 @@ Python 3.8 on Ubuntu 20.04
 ## Running Option1: TrainDBCliModelRunner
 ### Training
 ```
-(venv) # python3 TrainDBCliModelRunner.py train2 RSPN model/types/RSPN.py instacart /data/instacart/orders.csv data/files/ model/instances
+(venv) # python3 TrainDBCliModelRunner.py train2 RSPN model/types/RSPN.py instacart data/files/instacart/csv/orders.csv data/files/ model/instances 0.3 10 10000000 
 
 (some warnings...)
 ```
-- train2: command for RSPN testing
-- modeltype_class: name of the model (class) (ex, RSPN)
-- modeltype_uri: path for the model class file (ex, model/types/RSPN.py)
-- data_name: name(space) of the training dataset, (ex, instacart)
-- data_file: path to the training dataset, /path/to/namespace/tablename.csv (ex, /data/instacart/orders.csv)
-- metadata_root: root dir of the metadata(.json or .hdf) (to be modified)
-- model_path: (root) path to the generated model (ex, model/instances)
+- **command**: command for RSPN testing (ex, **train2**)
+- **modeltype_class**: name of the model (class) (ex, **RSPN**)
+- **modeltype_uri**: path for the model class file (ex, **model/types/RSPN.py**)
+- **data_name**: name(space) of the training dataset, (ex, **instacart**)
+- **data_file**: path to the training dataset, (ex, **data/files/instacart/csv/orders.csv**)
+- **metadata_root**: root dir of the metadata(.json or .hdf) (ex, **data/files/**)
+- **model_path**: (root) path to the generated model (ex, **model/instances**)
+- **rdc_threshold**: (float) RDC threshold (ex, **0.3**)
+- **post_sampling_factor**: (int) post sampling factor (ex, **10**)
+- **sample_size**: sample size (ex, **10000000**)
 
 ### Estimation
-...
+**TBD**
 
 ## Running Option2: Instantiate RSPN
 ### Training and Estimation
@@ -56,7 +59,10 @@ app = RSPN()
 model_path = app.train('instacart',
                        '/home/nam/Projects/datasets/instacart/orders.csv',
                        'data/files/',
-                       'model/instances')
+                       'model/instances',
+                       0.3,
+                       10,
+                       10000000)
 print(model_path)
 
 # estimation
@@ -76,39 +82,51 @@ SELECT COUNT(*) FROM orders WHERE order_dow >= 2
 ((1343995.131280017, 1347515.079651983), 1345755.105466)
 ```
 ## Running Option3: REST API (using Fast API)
-- **Caution**: currently you have to restart the rest.py after training since it cannot cleanup multi processes
-1. Execute the rest.py. 
+
+1. Execute the **rest.py**. 
 The default host address and port (http://0.0.0.0:8000) will be applied if no args specified.
+- run the following command if not installed
 ```
-// run the following command if not installed
-// (venv) # pip install fastapi uvicorn requests
-
+(venv) # pip install fastapi uvicorn requests psutil
+```
+- launch the rest service
+```
 (venv) # python3 rest.py
-
- // For setting up your own address/port (e.g., http://127.0.0.1:8080):
- // (venv) # python3 main.py --rest_host 127.0.0.1 --rest_port 8080
 ```
+  - For setting up your own address/port (e.g., http://127.0.0.1:8080):
+    ```
+    (venv) # python3 rest.py --rest_host 127.0.0.1 --rest_port 8080
+    ```
 
 2. Open a web browser and go to the address you specified.
-(For default setting: http://0.0.0.0:8000/docs)
+(For default setting: **http://0.0.0.0:8000/docs**)
 
-![rest-all](https://user-images.githubusercontent.com/24988105/186143057-fcd91ee1-3f1e-4ad0-b22d-7819c8ccc83a.png)
+![rest-all-current](https://user-images.githubusercontent.com/24988105/187908169-eaf31492-84ef-4619-8acd-535ef2aab5c2.png)
 
 ### Training
 1. Select the '/train/' and click 'Try it out'.
-2. Input arguments and click 'execute'. 
-   - dataset: name of the dataset, which will be used a prefix of the learned model name
-   - csv_path: training data, which must be in the server directory
-   - metadata_path: .json or .hdf file containing metadata of the input(csv)
-   - model_path: location of the model to be generated
-   
+   - **/train-sync** runs synchronously (waits for termination)
+   - **/train-async** runs asynchronously (runs the 'TrainDBCliModelRunner.py' and exits)
+     - use 'check' to see its status
+3. Input arguments and click 'execute'. 
+   - **dataset**: name of the dataset, which will be used a prefix of the learned model name
+   - **csv_path**: training data, which must be in the server directory
      (upload and remote URL are not yet supported)
-   For example:
+   - **metadata_path**: .json or .hdf file containing metadata of the input(csv)
+   - **model_path**: location of the model to be generated
+   - **rdc_threshold**: (float) RDC threshold (ex, 0.3)
+   - **post_sampling_factor**: (int) post sampling factor (ex, 10 or 30)
+   - **sample_size**: sample size (ex, 10000000)
    
-![rest-train](https://user-images.githubusercontent.com/24988105/187427079-87603e1f-2cfa-466e-a0ef-fae55817c177.png)
+   For example:
+#### train-sync
+![rest-train-sync](https://user-images.githubusercontent.com/24988105/187906996-68cd018f-1e54-42d6-9768-bc7a513e2146.png)
+
+#### train-async
+![rest-train-async](https://user-images.githubusercontent.com/24988105/187907028-80c93992-332d-4e1a-ae3b-0a44e2ba9b22.png)
 
 3. [Option] CLI
-   - install requests package if not exists
+   - install **requests** package if not exists
    ```
    (venv) # pip install requests
    ```
@@ -120,28 +138,39 @@ The default host address and port (http://0.0.0.0:8000) will be applied if no ar
    csv_path = '/datasets/instacart/orders.csv'
    metadata_path = 'data/files/'
    model_path = 'model/instances'
-   payload = {'dataset':model_name, 'csv_path':dataset_path, 'metadata_path':metadata_path, 'model_path'=model_path}
+   rdc_threshold = 0.3
+   post_sampling_factor = 10
+   sample_size = 10000000
+   payload = {'dataset':model_name, 'csv_path':dataset_path, 'metadata_path':metadata_path, 'model_path'=model_path,
+              'rdc_threshold':rdc_threshold, 'post_sampling_factor':post_sampling_factor, 'sample_size':sample_size}
    response = requests.post(url, json=payload)
    result = response.json()
    print(response.status_code)
-   print(result['Created')
+   print(result)
    ```
+### Check Training Status
+1. Select the '**/check**' and click 'Try it out'.
+2. Input the pid you want to see and click 'execute'.
+   - **pid**: process ID of the training process
+![rest-check](https://user-images.githubusercontent.com/24988105/187907881-7986ffab-a4a4-4d67-bf57-e135f0ce0e75.png)
+
+
 
 ### Estimation (AQP)
-1. Select the '/estimate/' and click 'Try it out'.
+1. Select the '**/estimate**' and click 'Try it out'.
 2. Input arguments and click 'execute'.
-   - query: an SQL statement to be approximated. 
+   - **query**: an SQL statement to be approximated. 
      
-     e.g., SELECT COUNT(*) FROM orders WHERE order_dow >= 2
+     e.g., **SELECT COUNT(*) FROM orders WHERE order_dow >= 2**
      
      (currently COUNT is supported. SUM and AVG will be available soon)
      
      (The table name(orders) should match the csv name(orders.csv))
      
-   - dataset: name(space) of the dataset you learned
-   - model_path: location of the learned model, which must be uploaded in advance in the server filesystem.
-   - table_csv_path: (temporary parameter) location of the data file used for training
-   - show_confidence_intervals: yes/no
+   - **dataset**: name(space) of the dataset you learned
+   - **model_path**: location of the learned model, which must be uploaded in advance in the server filesystem.
+   - **table_csv_path** (To be removed): location of the data file used for training
+   - **show_confidence_intervals**: yes/no
    
    For example:
    
