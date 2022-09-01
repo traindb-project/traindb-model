@@ -42,8 +42,6 @@ class TrainDBCliModelRunner():
     model = getattr(mod, modeltype_class)(*args) #, **table_metadata['options'])
     generated_model_path = model.train(dataset, data_file, metadata_root, model_path, 
                                        rdc_threshold, post_sampling_factor, sample_size)
-    #XXX
-    print(generated_model_path)
     #TODO: model.save(generated_model_path)
 
     train_info = {}

@@ -78,18 +78,27 @@ async def aqp_train(target: Target):
                     target.dataset, target.csv_path, target.metadata_path, target.model_path, 
                     str(target.rdc_threshold), str(target.post_sampling_factor), str(target.sample_size)])
 
-    model_path = '/ensemble_single_' + target.dataset + '_' + str(target.sample_size) + '.pkl'
+    model_path = 'ensemble_single_' + target.dataset + '_' + str(target.sample_size) + '.pkl'
     pid = p.pid
     status = "OK" # TODO(nam): error handling
 
     return {"Creating": model_path, "By": pid, "Status": status}
 
-#TODO(nam): implement a polling method
 @app.get("/check/")
 def aqp_check_process(pid: int):
+    """
+    Check the status of the specified process
+    :param pid: process ID
+    :return: status
+    """
     import psutil
     p = psutil.Process(pid)
     status = p.status()
+    logger.info(f"status:{status}")
+    if status == "zombie":
+        status = "finished"
+        logger.info(f"status:{status}")
+        #p.kill() #p.terminate()
     return {"Status": status}
 
 @app.get("/estimate/")
