@@ -1,0 +1,195 @@
+2022-09-01 11:15:06,118 [INFO ]  Data Preparation: 
+2022-09-01 11:15:06,119 [INFO ]   - Setup Directories: input_csv_path: /home/nam/Projects/datasets/instacart/orders.csv, dataset_path: data/files/instacart
+2022-09-01 11:15:06,119 [INFO ]   - Making csv path data/files/instacart/csv/
+2022-09-01 11:15:06,119 [INFO ]    (Overwrite? True)
+2022-09-01 11:15:06,119 [INFO ]   - Making SchemaGraphs from data/files/instacart/csv/
+2022-09-01 11:15:06,119 [INFO ]     orders.table_name: orders
+2022-09-01 11:15:06,119 [INFO ]     orders.table_size: 28800991
+2022-09-01 11:15:06,119 [INFO ]     orders.primary_key: ['order_id']
+2022-09-01 11:15:06,120 [INFO ]     orders.csv_file_location: data/files/instacart/csv/orders.csv
+2022-09-01 11:15:06,120 [INFO ]     orders.sample_rate: 0.34721027481311323
+2022-09-01 11:15:06,120 [INFO ]  Data Preparation: Generate HDF
+2022-09-01 11:15:06,120 [INFO ]   - Generate hdf files for the given csv and save into data/files/instacart/hdf/
+2022-09-01 11:15:06,121 [INFO ]   - Removing the old data/files/instacart/hdf/
+2022-09-01 11:15:06,121 [INFO ]   - Making new data/files/instacart/hdf/
+2022-09-01 11:15:06,121 [INFO ]   - Prepare all tables
+2022-09-01 11:15:06,121 [INFO ]  Preparing hdf file for table orders
+2022-09-01 11:15:10,767 [INFO ]  Managing functional dependencies for table orders
+2022-09-01 11:15:11,071 [INFO ]  Preparing multipliers for table orders
+2022-09-01 11:15:11,071 [INFO ]  Preparing categorical values and null values for table orders
+2022-09-01 11:15:11,072 [DEBUG]  		Preparing categorical values for column order_id
+2022-09-01 11:15:13,030 [INFO ]  Ignoring column order_id for table orders because there are too many categorical values
+2022-09-01 11:15:13,032 [DEBUG]  		Preparing categorical values for column user_id
+2022-09-01 11:15:13,292 [INFO ]  Ignoring column user_id for table orders because there are too many categorical values
+2022-09-01 11:15:13,293 [DEBUG]  		Preparing categorical values for column eval_set
+2022-09-01 11:15:14,832 [DEBUG]  		Preparing categorical values for column order_number
+2022-09-01 11:15:16,337 [DEBUG]  		Preparing categorical values for column order_dow
+2022-09-01 11:15:17,716 [DEBUG]  		Preparing categorical values for column order_hour_of_day
+2022-09-01 11:15:19,046 [DEBUG]  		Preparing categorical values for column days_since_prior_order
+2022-09-01 11:15:20,371 [INFO ]  Relevant attributes for table orders are ['eval_set', 'order_number', 'order_dow', 'order_hour_of_day', 'days_since_prior_order']
+2022-09-01 11:15:20,371 [INFO ]  NULL values for table orders are [0, 0, 0, 0, 0]
+2022-09-01 11:15:22,484 [INFO ]  Adding table parts without join partners for table orders
+2022-09-01 11:15:22,485 [INFO ]  Metadata(HDF files) successfully created
+2022-09-01 11:15:22,485 [INFO ]  TRAIN RSPNs
+2022-09-01 11:15:22,485 [INFO ]   - learn RSPNs by 'single' strategy
+2022-09-01 11:15:22,485 [INFO ]  Creating naive ensemble.
+2022-09-01 11:15:22,485 [INFO ]  Learning SPN for orders.
+2022-09-01 11:15:22,485 [DEBUG]  generate_join_sample(single_table=orders, relationship_list=None, split_condition=None)
+2022-09-01 11:15:22,787 [DEBUG]  Using min_instance_slice parameter 34210.840000000004.
+2022-09-01 11:15:22,787 [INFO ]  SPN training phase with 3421084 samples
+/home/nam/Projects/traindb/traindb-model/test/rspn/rspn.py:73: VisibleDeprecationWarning: Creating an ndarray from ragged nested sequences (which is a list-or-tuple of lists-or-tuples-or ndarrays with different lengths or shapes) is deprecated. If you meant to do this, you must specify 'dtype=object' when creating the ndarray.
+  ds_context.domains = np.asanyarray(domain)
+2022-09-01 11:15:23,318 [DEBUG]  Built domains in 0.5310656009241939 sec
+2022-09-01 11:15:24,419 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (3421084, 5) (remaining tasks 0)
+2022-09-01 11:15:28,845 [DEBUG]  		found 2 row clusters (in 4.42495 secs)
+2022-09-01 11:15:29,111 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (2759642, 5) (remaining tasks 1)
+2022-09-01 11:15:30,048 [DEBUG]  		found 4 col clusters (in 0.93692 secs)
+2022-09-01 11:15:30,144 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (661442, 5) (remaining tasks 4)
+2022-09-01 11:15:30,934 [DEBUG]  		found 5 col clusters (in 0.78980 secs)
+2022-09-01 11:15:30,935 [DEBUG]  OP: Operation.CREATE_LEAF on slice (2759642, 1) (remaining tasks 8)
+2022-09-01 11:15:31,032 [DEBUG]  		 created leaf Categorical for scope=[0] (in 0.09688 secs)
+2022-09-01 11:15:31,072 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (2759642, 2) (remaining tasks 7)
+2022-09-01 11:15:31,448 [DEBUG]  		found 1 col clusters (in 0.37495 secs)
+2022-09-01 11:15:31,448 [DEBUG]  OP: Operation.CREATE_LEAF on slice (2759642, 1) (remaining tasks 7)
+2022-09-01 11:15:31,553 [DEBUG]  		 created leaf Categorical for scope=[2] (in 0.10462 secs)
+2022-09-01 11:15:31,553 [DEBUG]  OP: Operation.CREATE_LEAF on slice (2759642, 1) (remaining tasks 6)
+2022-09-01 11:15:31,642 [DEBUG]  		 created leaf Categorical for scope=[3] (in 0.08865 secs)
+2022-09-01 11:15:31,642 [DEBUG]  OP: Operation.CREATE_LEAF on slice (661442, 1) (remaining tasks 5)
+2022-09-01 11:15:31,652 [DEBUG]  		 created leaf Categorical for scope=[0] (in 0.01065 secs)
+2022-09-01 11:15:31,653 [DEBUG]  OP: Operation.CREATE_LEAF on slice (661442, 1) (remaining tasks 4)
+2022-09-01 11:15:31,672 [DEBUG]  		 created leaf Categorical for scope=[1] (in 0.01925 secs)
+2022-09-01 11:15:31,672 [DEBUG]  OP: Operation.CREATE_LEAF on slice (661442, 1) (remaining tasks 3)
+2022-09-01 11:15:31,690 [DEBUG]  		 created leaf Categorical for scope=[2] (in 0.01742 secs)
+2022-09-01 11:15:31,690 [DEBUG]  OP: Operation.CREATE_LEAF on slice (661442, 1) (remaining tasks 2)
+2022-09-01 11:15:31,711 [DEBUG]  		 created leaf Categorical for scope=[3] (in 0.02130 secs)
+2022-09-01 11:15:31,711 [DEBUG]  OP: Operation.CREATE_LEAF on slice (661442, 1) (remaining tasks 1)
+2022-09-01 11:15:31,734 [DEBUG]  		 created leaf Categorical for scope=[4] (in 0.02274 secs)
+2022-09-01 11:15:31,768 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (2759642, 2) (remaining tasks 0)
+2022-09-01 11:15:35,701 [DEBUG]  		found 2 row clusters (in 3.93334 secs)
+2022-09-01 11:15:35,789 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (1228163, 2) (remaining tasks 1)
+2022-09-01 11:15:36,198 [DEBUG]  		found 1 col clusters (in 0.40910 secs)
+2022-09-01 11:15:36,349 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (1531479, 2) (remaining tasks 1)
+2022-09-01 11:15:36,557 [DEBUG]  		found 2 col clusters (in 0.20710 secs)
+2022-09-01 11:15:36,709 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (1228163, 2) (remaining tasks 2)
+2022-09-01 11:15:39,880 [DEBUG]  		found 2 row clusters (in 3.17043 secs)
+2022-09-01 11:15:39,880 [DEBUG]  OP: Operation.CREATE_LEAF on slice (1531479, 1) (remaining tasks 3)
+2022-09-01 11:15:39,946 [DEBUG]  		 created leaf Categorical for scope=[1] (in 0.06588 secs)
+2022-09-01 11:15:39,946 [DEBUG]  OP: Operation.CREATE_LEAF on slice (1531479, 1) (remaining tasks 2)
+2022-09-01 11:15:39,998 [DEBUG]  		 created leaf Categorical for scope=[4] (in 0.05137 secs)
+2022-09-01 11:15:40,064 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (928726, 2) (remaining tasks 1)
+2022-09-01 11:15:40,356 [DEBUG]  		found 1 col clusters (in 0.29179 secs)
+2022-09-01 11:15:40,441 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (299437, 2) (remaining tasks 1)
+2022-09-01 11:15:40,845 [DEBUG]  		found 1 col clusters (in 0.40366 secs)
+2022-09-01 11:15:40,950 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (928726, 2) (remaining tasks 1)
+2022-09-01 11:15:44,095 [DEBUG]  		found 2 row clusters (in 3.14482 secs)
+2022-09-01 11:15:44,116 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (299437, 2) (remaining tasks 2)
+2022-09-01 11:15:46,053 [DEBUG]  		found 2 row clusters (in 1.93671 secs)
+2022-09-01 11:15:46,103 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (690184, 2) (remaining tasks 3)
+2022-09-01 11:15:46,385 [DEBUG]  		found 2 col clusters (in 0.28162 secs)
+2022-09-01 11:15:46,424 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (238542, 2) (remaining tasks 4)
+2022-09-01 11:15:46,777 [DEBUG]  		found 1 col clusters (in 0.35110 secs)
+2022-09-01 11:15:46,817 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (211429, 2) (remaining tasks 4)
+2022-09-01 11:15:47,394 [DEBUG]  		found 1 col clusters (in 0.57670 secs)
+2022-09-01 11:15:47,425 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (88008, 2) (remaining tasks 4)
+2022-09-01 11:15:47,835 [DEBUG]  		found 1 col clusters (in 0.40956 secs)
+2022-09-01 11:15:47,837 [DEBUG]  OP: Operation.CREATE_LEAF on slice (690184, 1) (remaining tasks 4)
+2022-09-01 11:15:47,868 [DEBUG]  		 created leaf Categorical for scope=[1] (in 0.03070 secs)
+2022-09-01 11:15:47,869 [DEBUG]  OP: Operation.CREATE_LEAF on slice (690184, 1) (remaining tasks 3)
+2022-09-01 11:15:47,896 [DEBUG]  		 created leaf Categorical for scope=[4] (in 0.02781 secs)
+2022-09-01 11:15:47,924 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (238542, 2) (remaining tasks 2)
+2022-09-01 11:15:50,808 [DEBUG]  		found 2 row clusters (in 2.88448 secs)
+2022-09-01 11:15:50,825 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (211429, 2) (remaining tasks 3)
+2022-09-01 11:15:52,506 [DEBUG]  		found 2 row clusters (in 1.68083 secs)
+2022-09-01 11:15:52,513 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (88008, 2) (remaining tasks 4)
+2022-09-01 11:15:54,816 [DEBUG]  		found 2 row clusters (in 2.30288 secs)
+2022-09-01 11:15:54,830 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (174347, 2) (remaining tasks 5)
+2022-09-01 11:15:55,097 [DEBUG]  		found 1 col clusters (in 0.26634 secs)
+2022-09-01 11:15:55,113 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (64195, 2) (remaining tasks 5)
+2022-09-01 11:15:55,449 [DEBUG]  		found 1 col clusters (in 0.32995 secs)
+2022-09-01 11:15:55,450 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (5219, 2) (remaining tasks 5)
+2022-09-01 11:15:55,456 [DEBUG]  		naive factorization 2 columns (in 0.00574 secs)
+2022-09-01 11:15:55,491 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (206210, 2) (remaining tasks 4)
+2022-09-01 11:15:55,755 [DEBUG]  		found 1 col clusters (in 0.26330 secs)
+2022-09-01 11:15:55,761 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (55035, 2) (remaining tasks 4)
+2022-09-01 11:15:56,054 [DEBUG]  		found 1 col clusters (in 0.29298 secs)
+2022-09-01 11:15:56,060 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (32973, 2) (remaining tasks 4)
+2022-09-01 11:15:56,067 [DEBUG]  		naive factorization 2 columns (in 0.00698 secs)
+2022-09-01 11:15:56,087 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (174347, 2) (remaining tasks 3)
+2022-09-01 11:15:58,612 [DEBUG]  		found 2 row clusters (in 2.52389 secs)
+2022-09-01 11:15:58,617 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (64195, 2) (remaining tasks 4)
+2022-09-01 11:16:01,410 [DEBUG]  		found 2 row clusters (in 2.79338 secs)
+2022-09-01 11:16:01,427 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (206210, 2) (remaining tasks 5)
+/home/nam/Projects/traindb/traindb-model/test/rspn/learning/rspn_learning.py:165: ConvergenceWarning: Number of distinct clusters (1) found smaller than n_clusters (2). Possibly due to duplicate points in X.
+  clusters = kmeans.fit(data_sample).predict(data)
+2022-09-01 11:16:03,292 [DEBUG]  		found 1 row clusters (in 1.86470 secs)
+2022-09-01 11:16:03,299 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (55035, 2) (remaining tasks 5)
+2022-09-01 11:16:05,177 [DEBUG]  		found 2 row clusters (in 1.87776 secs)
+2022-09-01 11:16:05,183 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (47850, 2) (remaining tasks 6)
+2022-09-01 11:16:05,440 [DEBUG]  		found 1 col clusters (in 0.25698 secs)
+2022-09-01 11:16:05,456 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (126497, 2) (remaining tasks 6)
+2022-09-01 11:16:05,724 [DEBUG]  		found 1 col clusters (in 0.26785 secs)
+2022-09-01 11:16:05,730 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (47515, 2) (remaining tasks 6)
+2022-09-01 11:16:06,090 [DEBUG]  		found 1 col clusters (in 0.35924 secs)
+2022-09-01 11:16:06,093 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (16680, 2) (remaining tasks 6)
+2022-09-01 11:16:06,104 [DEBUG]  		naive factorization 2 columns (in 0.01047 secs)
+2022-09-01 11:16:06,125 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (206210, 2) (remaining tasks 5)
+2022-09-01 11:16:06,321 [DEBUG]  		found 1 col clusters (in 0.19585 secs)
+2022-09-01 11:16:06,325 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (34605, 2) (remaining tasks 5)
+2022-09-01 11:16:06,670 [DEBUG]  		found 1 col clusters (in 0.34288 secs)
+2022-09-01 11:16:06,673 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (20430, 2) (remaining tasks 5)
+2022-09-01 11:16:06,688 [DEBUG]  		naive factorization 2 columns (in 0.01483 secs)
+2022-09-01 11:16:06,693 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (47850, 2) (remaining tasks 4)
+2022-09-01 11:16:08,783 [DEBUG]  		found 2 row clusters (in 2.08935 secs)
+2022-09-01 11:16:08,793 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (126497, 2) (remaining tasks 5)
+2022-09-01 11:16:11,150 [DEBUG]  		found 2 row clusters (in 2.35691 secs)
+2022-09-01 11:16:11,154 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (47515, 2) (remaining tasks 6)
+2022-09-01 11:16:13,315 [DEBUG]  		found 2 row clusters (in 2.16065 secs)
+2022-09-01 11:16:13,332 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (206210, 2) (remaining tasks 7)
+/home/nam/Projects/traindb/traindb-model/test/rspn/learning/rspn_learning.py:165: ConvergenceWarning: Number of distinct clusters (1) found smaller than n_clusters (2). Possibly due to duplicate points in X.
+  clusters = kmeans.fit(data_sample).predict(data)
+2022-09-01 11:16:15,132 [DEBUG]  		found 1 row clusters (in 1.79990 secs)
+2022-09-01 11:16:15,135 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (34605, 2) (remaining tasks 7)
+2022-09-01 11:16:16,873 [DEBUG]  		found 2 row clusters (in 1.73777 secs)
+2022-09-01 11:16:16,877 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (26907, 2) (remaining tasks 8)
+2022-09-01 11:16:16,885 [DEBUG]  		naive factorization 2 columns (in 0.00744 secs)
+2022-09-01 11:16:16,887 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (20943, 2) (remaining tasks 7)
+2022-09-01 11:16:16,895 [DEBUG]  		naive factorization 2 columns (in 0.00771 secs)
+2022-09-01 11:16:16,902 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (50898, 2) (remaining tasks 6)
+2022-09-01 11:16:17,262 [DEBUG]  		found 1 col clusters (in 0.35966 secs)
+2022-09-01 11:16:17,270 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (75599, 2) (remaining tasks 6)
+2022-09-01 11:16:17,614 [DEBUG]  		found 1 col clusters (in 0.34308 secs)
+2022-09-01 11:16:17,617 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (22411, 2) (remaining tasks 6)
+2022-09-01 11:16:17,633 [DEBUG]  		naive factorization 2 columns (in 0.01610 secs)
+2022-09-01 11:16:17,636 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (25104, 2) (remaining tasks 5)
+2022-09-01 11:16:17,642 [DEBUG]  		naive factorization 2 columns (in 0.00577 secs)
+2022-09-01 11:16:17,666 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (206210, 2) (remaining tasks 4)
+/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/numpy/lib/function_base.py:2853: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+2022-09-01 11:16:17,963 [DEBUG]  		found 2 col clusters (in 0.28717 secs)
+2022-09-01 11:16:17,970 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (21021, 2) (remaining tasks 5)
+2022-09-01 11:16:17,980 [DEBUG]  		naive factorization 2 columns (in 0.00823 secs)
+2022-09-01 11:16:17,984 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (13584, 2) (remaining tasks 4)
+2022-09-01 11:16:18,004 [DEBUG]  		naive factorization 2 columns (in 0.02029 secs)
+2022-09-01 11:16:18,044 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (50898, 2) (remaining tasks 3)
+2022-09-01 11:16:20,044 [DEBUG]  		found 2 row clusters (in 1.99343 secs)
+2022-09-01 11:16:20,050 [DEBUG]  OP: Operation.SPLIT_ROWS on slice (75599, 2) (remaining tasks 4)
+2022-09-01 11:16:22,084 [DEBUG]  		found 2 row clusters (in 2.03317 secs)
+2022-09-01 11:16:22,084 [DEBUG]  OP: Operation.CREATE_LEAF on slice (206210, 1) (remaining tasks 5)
+2022-09-01 11:16:22,088 [DEBUG]  		 created leaf Categorical for scope=[1] (in 0.00370 secs)
+2022-09-01 11:16:22,088 [DEBUG]  OP: Operation.CREATE_LEAF on slice (206210, 1) (remaining tasks 4)
+2022-09-01 11:16:22,092 [DEBUG]  		 created leaf Categorical for scope=[4] (in 0.00318 secs)
+2022-09-01 11:16:22,093 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (17114, 2) (remaining tasks 3)
+2022-09-01 11:16:22,103 [DEBUG]  		naive factorization 2 columns (in 0.00918 secs)
+2022-09-01 11:16:22,106 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (33784, 2) (remaining tasks 2)
+2022-09-01 11:16:22,116 [DEBUG]  		naive factorization 2 columns (in 0.00891 secs)
+2022-09-01 11:16:22,125 [DEBUG]  OP: Operation.SPLIT_COLUMNS on slice (47585, 2) (remaining tasks 1)
+2022-09-01 11:16:22,466 [DEBUG]  		found 2 col clusters (in 0.34067 secs)
+2022-09-01 11:16:22,469 [DEBUG]  OP: Operation.NAIVE_FACTORIZATION on slice (28014, 2) (remaining tasks 2)
+2022-09-01 11:16:22,483 [DEBUG]  		naive factorization 2 columns (in 0.01322 secs)
+2022-09-01 11:16:22,483 [DEBUG]  OP: Operation.CREATE_LEAF on slice (47585, 1) (remaining tasks 1)
+2022-09-01 11:16:22,485 [DEBUG]  		 created leaf Categorical for scope=[1] (in 0.00227 secs)
+2022-09-01 11:16:22,486 [DEBUG]  OP: Operation.CREATE_LEAF on slice (47585, 1) (remaining tasks 0)
+2022-09-01 11:16:22,487 [DEBUG]  		 created leaf Categorical for scope=[4] (in 0.00143 secs)
+2022-09-01 11:16:22,490 [DEBUG]  Built SPN in 59.17189667467028 sec
+2022-09-01 11:16:22,491 [INFO ]  Saving ensemble to model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 11:16:22,493 [INFO ]   - create instance path (if not exists): model/instances/ensemble_single_instacart_10000000.pkl

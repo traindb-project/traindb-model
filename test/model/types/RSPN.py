@@ -50,7 +50,8 @@ class RSPN(TrainDBModel):
         self.logger.info("initialization")
 
 
-    def train(self, dataset, dataset_path, metadata_file, model_path):
+    def train(self, dataset, dataset_path, metadata_file, model_path, 
+              rdc_threshold, post_sampling_factor, sample_size):
         """
         Learn the given dataset
         :param dataset: name of model/dataset (e.g., instacart)
@@ -69,6 +70,9 @@ class RSPN(TrainDBModel):
                           dataset=dataset,
                           dataset_hdf_path=self.dataset_hdf_path, 
                           ensemble_path=model_path, # XXX: .pkl path
+                          rdc_threshold=rdc_threshold,
+                          post_sampling_factor=post_sampling_factor,
+                          samples_per_spn=sample_size,
                           strategy='single') # set the rest of the args to defaults
         self.logger.info(f"generated an RSPN ensemble in {self.model_path}.")
         
@@ -142,9 +146,9 @@ class RSPN(TrainDBModel):
 
         # - copy the input csv file into the target path (overwrite if already exists)
         # TODO handle the case when the csv doesn't exist
-        # TODO remove if exist? just like the 'hdf'?
         self.logger.info(f"  (Overwrite? {os.path.exists(csv_target_path)})")
-        if (csv_path != csv_target_path) and not os.path.exists(csv_target_path):
+        # XXX(2022.09.01)
+        if (csv_path != csv_target_path): #and not os.path.exists(csv_target_path):
             shutil.copy(csv_path, csv_target_path)
 
         self.logger.info(f" - Making SchemaGraphs from {dataset_csv_path}")
@@ -218,6 +222,8 @@ class RSPN(TrainDBModel):
         instance_path = None # path for the learned model file (.pkl)
         if strategy == 'single':
             self.logger.info(f" - learn RSPNs by 'single' strategy")
+            self.logger.info(f"   rdc_threshold:{rdc_threshold}")
+            self.logger.info(f"   post_sampling_factor:{post_sampling_factor}")
             instance_path = \
                 create_naive_all_split_ensemble(schema, dataset_hdf_path,
                                                 samples_per_spn, ensemble_path,

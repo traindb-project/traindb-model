@@ -47,6 +47,7 @@ def create_naive_all_split_ensemble(schema, hdf_path, sample_size, ensemble_path
             aqp_spn.learn_incremental(df_inc_samples.values)
         spn_ensemble.add_spn(aqp_spn)
 
+    #FIXME(nam): the path can be determined before learning. move it up!
     ensemble_path += '/ensemble_single_' + dataset + '_' + str(sample_size) + '.pkl'
     logger.info(f"Saving ensemble to {ensemble_path}")
     spn_ensemble.save(ensemble_path)

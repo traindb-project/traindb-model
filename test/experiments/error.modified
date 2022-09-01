@@ -1,0 +1,61 @@
+table_csv_path: data/files/instacart/csv/orders.csv
+2022-09-01 11:43:04,990 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 2
+2022-09-01 11:43:04,991 [INFO ]   - Query: select count(*) from orders where order_dow >= 2, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 11:43:04,991 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 11:43:04,991 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 11:43:05,012 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+INFO:     127.0.0.1:41934 - "GET /estimate/?query=select%20count%28%2A%29%20from%20orders%20where%20order_dow%20%3E%3D%202&dataset=instacart&table_csv_path=data%2Ffiles%2Finstacart%2Fcsv%2Forders.csv&model_path=model%2Finstances%2Fensemble_single_instacart_10000000.pkl&show_confidence_intervals=true HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+    result = await app(self.scope, self.receive, self.send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/uvicorn/middleware/proxy_headers.py", line 78, in __call__
+    return await self.app(scope, receive, send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/fastapi/applications.py", line 269, in __call__
+    await super().__call__(scope, receive, send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/applications.py", line 124, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/middleware/errors.py", line 184, in __call__
+    raise exc
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/middleware/errors.py", line 162, in __call__
+    await self.app(scope, receive, _send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/exceptions.py", line 93, in __call__
+    raise exc
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/exceptions.py", line 82, in __call__
+    await self.app(scope, receive, sender)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py", line 21, in __call__
+    raise e
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/fastapi/middleware/asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/routing.py", line 670, in __call__
+    await route.handle(scope, receive, send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/routing.py", line 266, in handle
+    await self.app(scope, receive, send)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/routing.py", line 65, in app
+    response = await func(request)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/fastapi/routing.py", line 227, in app
+    raw_response = await run_endpoint_function(
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/fastapi/routing.py", line 162, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/starlette/concurrency.py", line 41, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func, *args)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/anyio/to_thread.py", line 31, in run_sync
+    return await get_asynclib().run_sync_in_worker_thread(
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/anyio/_backends/_asyncio.py", line 937, in run_sync_in_worker_thread
+    return await future
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/anyio/_backends/_asyncio.py", line 867, in run
+    result = context.run(func, *args)
+  File "rest.py", line 77, in aqp_read
+    value = estimate(schema, dataset, query, table_csv_path, model_path, show_confidence_intervals)
+  File "rest.py", line 243, in estimate
+    result = evaluate_an_aqp_query(ensemble_location, query, schema, show_confidence_intervals)
+  File "/home/nam/Projects/traindb/traindb-model/test/evaluation/aqp_evaluation.py", line 103, in evaluate_an_aqp_query
+    spn_ensemble = read_ensemble(ensemble_location, build_reverse_dict=True)
+  File "/home/nam/Projects/traindb/traindb-model/test/train/ensemble_compilation/spn_ensemble.py", line 224, in read_ensemble
+    logging.debug(f"Stats: ({get_structure_stats(spn.mspn)})")
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/spn/algorithms/Statistics.py", line 48, in get_structure_stats
+    params += len(l.parameters)
+  File "/home/nam/Projects/traindb/traindb-ml/venv2/lib/python3.8/site-packages/spn/structure/Base.py", line 25, in parameters
+    raise Exception("Not Implemented")
+Exception: Not Implemented
+

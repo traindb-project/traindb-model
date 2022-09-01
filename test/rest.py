@@ -36,14 +36,17 @@ class Target(BaseModel):
     csv_path: str
     metadata_path: str
     model_path: str
+    rdc_threshold: float
+    post_sampling_factor: int
+    sample_size: int
 
 app = FastAPI()
 schema = None
 dataset_hdf_path = 'data/files/instacart/hdf'
 table_csv_path = 'data/files/instacart/csv'+'{}.csv'
 
-@app.post("/train/")
-async def aqp_train(target: Target):
+@app.post("/train-sync/")
+async def aqp_train_sync(target: Target):
     """
     Learn the given dataset
     :param dataset: name of model/dataset (e.g., instacart)
@@ -52,6 +55,7 @@ async def aqp_train(target: Target):
     :param model_path: location of the model (.pkl) to be generated (e.g., model/instances)
     :returns: path of the generated model(.pkl) if suceess
     """
+
     schema, dataset_hdf_path, table_csv_path = \
         data_preparation(target.dataset, target.csv_path, target.metadata_path)
     model_path =\
@@ -59,8 +63,34 @@ async def aqp_train(target: Target):
                       dataset=target.dataset, 
                       ensemble_path=target.model_path,
                       hdf_path=dataset_hdf_path, 
+                      rdc_threshold=target.rdc_threshold,
+                      post_sampling_factor=target.post_sampling_factor,
+                      samples_per_spn=target.sample_size,
                       strategy='single')
-    return {"Created": model_path, "Status": "OK"}
+
+    status = "OK" # TODO(nam): error handling
+    return {"Creating": model_path, "Status": status}
+
+@app.post("/train-async/")
+async def aqp_train(target: Target):
+    import subprocess
+    p = subprocess.Popen(["python3", "TrainDBCliModelRunner.py", "train2", "RSPN", "model/types/RSPN.py",
+                    target.dataset, target.csv_path, target.metadata_path, target.model_path, 
+                    str(target.rdc_threshold), str(target.post_sampling_factor), str(target.sample_size)])
+
+    model_path = '/ensemble_single_' + target.dataset + '_' + str(target.sample_size) + '.pkl'
+    pid = p.pid
+    status = "OK" # TODO(nam): error handling
+
+    return {"Creating": model_path, "By": pid, "Status": status}
+
+#TODO(nam): implement a polling method
+@app.get("/check/")
+def aqp_check_process(pid: int):
+    import psutil
+    p = psutil.Process(pid)
+    status = p.status()
+    return {"Status": status}
 
 @app.get("/estimate/")
 def aqp_read(query: str, dataset: str, table_csv_path: str, model_path: str, show_confidence_intervals: bool):
@@ -126,9 +156,9 @@ def data_preparation(dataset, csv_path, metadata_path):
 
     # - copy the input csv file into the target path (overwrite if already exists)
     # TODO handle the case when the csv doesn't exist
-    # TODO remove if exist? just like the 'hdf'?
     logger.info(f"  (Overwrite? {os.path.exists(csv_target_path)})")
-    if (csv_path != csv_target_path) and not os.path.exists(csv_target_path):
+    # XXX(2022.09.01)
+    if (csv_path != csv_target_path): #and not os.path.exists(csv_target_path):
         shutil.copy(csv_path, csv_target_path)
 
     logger.info(f" - Making SchemaGraphs from {dataset_csv_path}")
@@ -201,6 +231,8 @@ def generate_rspn(schema,
     instance_path = None # path for the learned model file (.pkl)
     if strategy == 'single': 
         logger.info(f" - learn RSPNs by 'single' strategy")
+        logger.info(f"   rdc_threshold:{rdc_threshold}")
+        logger.info(f"   post_sampling_factor:{post_sampling_factor}")
         instance_path = \
             create_naive_all_split_ensemble(schema, hdf_path, 
                                             samples_per_spn, ensemble_path,

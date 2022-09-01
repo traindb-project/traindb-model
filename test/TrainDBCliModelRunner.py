@@ -36,10 +36,14 @@ class TrainDBCliModelRunner():
 
   # TODO: cleanup this ad-hoc implementation
   def train_model2(self, modeltype_class, modeltype_path, dataset, data_file, metadata_root, model_path, 
+                   rdc_threshold, post_sampling_factor, sample_size,
                    args=[], kwargs={}):
     mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)(*args)#, **table_metadata['options'])
-    generated_model_path = model.train(dataset, data_file, metadata_root, model_path)
+    model = getattr(mod, modeltype_class)(*args) #, **table_metadata['options'])
+    generated_model_path = model.train(dataset, data_file, metadata_root, model_path, 
+                                       rdc_threshold, post_sampling_factor, sample_size)
+    #XXX
+    print(generated_model_path)
     #TODO: model.save(generated_model_path)
 
     train_info = {}
@@ -77,6 +81,9 @@ parser_train.add_argument('data_name', type=str, help='(str) namespace of the da
 parser_train.add_argument('data_file', type=str, help='(str) path to .csv data file')
 parser_train.add_argument('metadata_root', type=str, help='(str) root of the hdf files')
 parser_train.add_argument('model_path', type=str, help='(str) path to model')
+parser_train.add_argument('rdc_threshold', type=str, help='(float) RDC threshold')
+parser_train.add_argument('post_sampling_factor', type=str, help='(int) post sampling factor')
+parser_train.add_argument('sample_size', type=str, help='(int) sample size')
 
 parser_synopsis = subparsers.add_parser('synopsis', help='generate synopsis command')
 parser_synopsis.add_argument('modeltype_class', type=str, help='(str) modeltype class name')
@@ -102,7 +109,9 @@ elif args.cmd == 'train2':
   #with open(args.metadata_file) as metadata_file:
   #  table_metadata = json.load(metadata_file)
   json_train_info = runner.train_model2(args.modeltype_class, args.modeltype_uri, 
-                                       args.data_name, args.data_file, args.metadata_root, args.model_path)
+                                        args.data_name, args.data_file, args.metadata_root, args.model_path,
+                                        float(args.rdc_threshold), int(args.post_sampling_factor),
+                                        int(args.sample_size))
   with open(os.path.join(args.model_path, 'train_info.json'), 'w') as f:
     f.write(json_train_info)
   sys.exit(0)

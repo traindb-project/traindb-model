@@ -1,0 +1,233 @@
+{
+  "Query": "select count(*) from orders where order_dow >= 7",
+  "Estimated Value": [
+    [
+      -0.6327239220621961,
+      2.632723922062196
+    ],
+    1
+  ]
+}
+
+2022-09-01 15:01:50,278 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 7
+2022-09-01 15:01:50,278 [INFO ]   - Query: select count(*) from orders where order_dow >= 7, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:01:50,278 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:01:50,279 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:01:50,296 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:01:50,296 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5e7eee0>
+2022-09-01 15:01:50,298 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 7:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5e832b0>'
+2022-09-01 15:01:50,298 [DEBUG]   In evaluate_query
+2022-09-01 15:01:50,298 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:01:50,299 [DEBUG]  		predicted cardinality: 1.0
+2022-09-01 15:01:50,299 [DEBUG]  		computed prototypical cardinality in 0.0007374179549515247 secs.
+2022-09-01 15:01:50,299 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:01:50,300 [DEBUG]   lower_bound: -0.6327239220621961, upper_bound: 2.632723922062196
+2022-09-01 15:01:50,301 [INFO ]  Result: ((-0.6327239220621961, 2.632723922062196), 1.0)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 6",
+  "Estimated Value": [
+    [
+      1290745.9766681131,
+      1294206.3277620857
+    ],
+    1292476.1522150994
+  ]
+}
+
+2022-09-01 15:04:52,098 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 6
+2022-09-01 15:04:52,098 [INFO ]   - Query: select count(*) from orders where order_dow >= 6, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:04:52,098 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:04:52,098 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:04:52,118 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:04:52,118 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5e830a0>
+2022-09-01 15:04:52,121 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 6:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5e880d0>'
+2022-09-01 15:04:52,121 [DEBUG]   In evaluate_query
+2022-09-01 15:04:52,121 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:04:52,122 [DEBUG]  		predicted cardinality: 1292476.1522150994
+2022-09-01 15:04:52,122 [DEBUG]  		computed prototypical cardinality in 0.0008927597664296627 secs.
+2022-09-01 15:04:52,122 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:04:52,123 [DEBUG]   lower_bound: 1290745.9766681131, upper_bound: 1294206.3277620857
+2022-09-01 15:04:52,124 [INFO ]  Result: ((1290745.9766681131, 1294206.3277620857), 1292476.1522150994)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 5",
+  "Estimated Value": [
+    [
+      2595962.6340152174,
+      2600479.2079525813
+    ],
+    2598220.9209838994
+  ]
+}
+
+2022-09-01 15:05:15,266 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 5
+2022-09-01 15:05:15,266 [INFO ]   - Query: select count(*) from orders where order_dow >= 5, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:05:15,266 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:05:15,266 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:05:15,284 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:05:15,285 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5e88310>
+2022-09-01 15:05:15,286 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 5:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5e8d250>'
+2022-09-01 15:05:15,287 [DEBUG]   In evaluate_query
+2022-09-01 15:05:15,287 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:05:15,288 [DEBUG]  		predicted cardinality: 2598220.9209838994
+2022-09-01 15:05:15,288 [DEBUG]  		computed prototypical cardinality in 0.0010200678370893002 secs.
+2022-09-01 15:05:15,288 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:05:15,289 [DEBUG]   lower_bound: 2595962.6340152174, upper_bound: 2600479.2079525813
+2022-09-01 15:05:15,290 [INFO ]  Result: ((2595962.6340152174, 2600479.2079525813), 2598220.9209838994)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 4",
+  "Estimated Value": [
+    [
+      3823621.7070363015,
+      3828617.2753212973
+    ],
+    3826119.4911787994
+  ]
+}
+
+2022-09-01 15:05:42,764 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 4
+2022-09-01 15:05:42,764 [INFO ]   - Query: select count(*) from orders where order_dow >= 4, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:05:42,765 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:05:42,765 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:05:42,783 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:05:42,783 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5e8dc10>
+2022-09-01 15:05:42,785 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 4:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5e92370>'
+2022-09-01 15:05:42,785 [DEBUG]   In evaluate_query
+2022-09-01 15:05:42,785 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:05:42,786 [DEBUG]  		predicted cardinality: 3826119.4911787994
+2022-09-01 15:05:42,786 [DEBUG]  		computed prototypical cardinality in 0.0009134672582149506 secs.
+2022-09-01 15:05:42,786 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:05:42,787 [DEBUG]   lower_bound: 3823621.7070363015, upper_bound: 3828617.2753212973
+2022-09-01 15:05:42,788 [INFO ]  Result: ((3823621.7070363015, 3828617.2753212973), 3826119.4911787994)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 3",
+  "Estimated Value": [
+    [
+      5082080.949060761,
+      5087203.361147237
+    ],
+    5084642.155103999
+  ]
+}
+
+2022-09-01 15:06:09,158 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 3
+2022-09-01 15:06:09,158 [INFO ]   - Query: select count(*) from orders where order_dow >= 3, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:06:09,158 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:06:09,158 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:06:09,173 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:06:09,174 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5e92070>
+2022-09-01 15:06:09,175 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 3:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5e97f40>'
+2022-09-01 15:06:09,175 [DEBUG]   In evaluate_query
+2022-09-01 15:06:09,175 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:06:09,176 [DEBUG]  		predicted cardinality: 5084642.155103999
+2022-09-01 15:06:09,176 [DEBUG]  		computed prototypical cardinality in 0.0007958849892020226 secs.
+2022-09-01 15:06:09,176 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:06:09,177 [DEBUG]   lower_bound: 5082080.949060761, upper_bound: 5087203.361147237
+2022-09-01 15:06:09,178 [INFO ]  Result: ((5082080.949060761, 5087203.361147237), 5084642.155103999)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 2",
+  "Estimated Value": [
+    [
+      6427957.045586112,
+      6432837.475553888
+    ],
+    6430397.26057
+  ]
+}
+
+2022-09-01 15:06:35,231 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 2
+2022-09-01 15:06:35,232 [INFO ]   - Query: select count(*) from orders where order_dow >= 2, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:06:35,232 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:06:35,232 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:06:35,259 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:06:35,260 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5e97910>
+2022-09-01 15:06:35,261 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 2:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5d5ea30>'
+2022-09-01 15:06:35,262 [DEBUG]   In evaluate_query
+2022-09-01 15:06:35,262 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:06:35,263 [DEBUG]  		predicted cardinality: 6430397.26057
+2022-09-01 15:06:35,263 [DEBUG]  		computed prototypical cardinality in 0.0009287940338253975 secs.
+2022-09-01 15:06:35,263 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:06:35,264 [DEBUG]   lower_bound: 6427957.045586112, upper_bound: 6432837.475553888
+2022-09-01 15:06:35,265 [INFO ]  Result: ((6427957.045586112, 6432837.475553888), 6430397.26057)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 1",
+  "Estimated Value": [
+    [
+      8120441.934438582,
+      8124342.304841018
+    ],
+    8122392.1196398
+  ]
+}
+
+2022-09-01 15:06:59,673 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 1
+2022-09-01 15:06:59,673 [INFO ]   - Query: select count(*) from orders where order_dow >= 1, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:06:59,673 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:06:59,673 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:06:59,692 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:06:59,693 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5d5e3d0>
+2022-09-01 15:06:59,694 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 1:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5fc33d0>'
+2022-09-01 15:06:59,695 [DEBUG]   In evaluate_query
+2022-09-01 15:06:59,695 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:06:59,696 [DEBUG]  		predicted cardinality: 8122392.1196398
+2022-09-01 15:06:59,696 [DEBUG]  		computed prototypical cardinality in 0.0009412681683897972 secs.
+2022-09-01 15:06:59,696 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:06:59,697 [DEBUG]   lower_bound: 8120441.934438582, upper_bound: 8124342.304841018
+2022-09-01 15:06:59,697 [INFO ]  Result: ((8120441.934438582, 8124342.304841018), 8122392.1196398)
+
+{
+  "Query": "select count(*) from orders where order_dow >= 0",
+  "Estimated Value": [
+    [
+      9853058.0693253,
+      9853058.0693253
+    ],
+    9853058.0693253
+  ]
+}
+
+2022-09-01 15:07:28,956 [INFO ]  ESTIMATE Aggregations: select count(*) from orders where order_dow >= 0
+2022-09-01 15:07:28,957 [INFO ]   - Query: select count(*) from orders where order_dow >= 0, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:07:28,957 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:07:28,957 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:07:28,975 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:07:28,975 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5fc3dc0>
+2022-09-01 15:07:28,977 [INFO ]   Evaluate 'select count(*) from orders where order_dow >= 0:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5fca190>'
+2022-09-01 15:07:28,977 [DEBUG]   In evaluate_query
+2022-09-01 15:07:28,977 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:07:28,978 [DEBUG]  		predicted cardinality: 9853058.0693253
+2022-09-01 15:07:28,978 [DEBUG]  		computed prototypical cardinality in 0.0007313983514904976 secs.
+2022-09-01 15:07:28,978 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:07:28,979 [DEBUG]   lower_bound: 9853058.0693253, upper_bound: 9853058.0693253
+2022-09-01 15:07:28,980 [INFO ]  Result: ((9853058.0693253, 9853058.0693253), 9853058.0693253)
+
+{
+  "Query": "select count(*) from orders",
+  "Estimated Value": [
+    [
+      9853058.0693253,
+      9853058.0693253
+    ],
+    9853058.0693253
+  ]
+}
+
+2022-09-01 15:08:03,364 [INFO ]  ESTIMATE Aggregations: select count(*) from orders
+2022-09-01 15:08:03,364 [INFO ]   - Query: select count(*) from orders, Model: model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:08:03,364 [INFO ]   - Show Confidence Intervals: True
+2022-09-01 15:08:03,364 [INFO ]   Read the ensemble in model/instances/ensemble_single_instacart_10000000.pkl
+2022-09-01 15:08:03,382 [DEBUG]   - Including SPN with table_set {'orders'} with sampling ratio(3421083 / 9853058.0693253)
+2022-09-01 15:08:03,382 [INFO ]   : <train.ensemble_compilation.spn_ensemble.SPNEnsemble object at 0x7ff9d5fd03d0>
+2022-09-01 15:08:03,383 [INFO ]   Evaluate 'select count(*) from orders:<train.ensemble_compilation.graph_representation.Query object at 0x7ff9d5fd0f40>'
+2022-09-01 15:08:03,384 [DEBUG]   In evaluate_query
+2022-09-01 15:08:03,384 [DEBUG]   query.query_type = QueryType.CARDINALITY
+2022-09-01 15:08:03,384 [DEBUG]  		predicted cardinality: 9853058.0693253
+2022-09-01 15:08:03,385 [DEBUG]  		computed prototypical cardinality in 0.0006764442659914494 secs.
+2022-09-01 15:08:03,385 [DEBUG]   if len(query.group_bys) == 0 and confidence_intervals
+2022-09-01 15:08:03,385 [DEBUG]   lower_bound: 9853058.0693253, upper_bound: 9853058.0693253
+2022-09-01 15:08:03,386 [INFO ]  Result: ((9853058.0693253, 9853058.0693253), 9853058.0693253)

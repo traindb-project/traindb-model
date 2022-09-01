@@ -22,7 +22,7 @@ Python 3.8 on Ubuntu 20.04
 (venv) # pip install numpy pandas tables spflow, sqlparse, psycopg2
 
 // If you want to use REST interface (Fast API), install the followings as well
-(venv) # pip install fastapi uvicorn requests
+(venv) # pip install fastapi uvicorn requests psutil
 
 // cf. requirements.txt
 ```
