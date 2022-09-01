@@ -76,6 +76,7 @@ SELECT COUNT(*) FROM orders WHERE order_dow >= 2
 ((1343995.131280017, 1347515.079651983), 1345755.105466)
 ```
 ## Running Option3: REST API (using Fast API)
+- **Caution**: currently you have to restart the rest.py after training since it cannot cleanup multi processes
 1. Execute the rest.py. 
 The default host address and port (http://0.0.0.0:8000) will be applied if no args specified.
 ```
