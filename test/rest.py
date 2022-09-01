@@ -48,11 +48,14 @@ table_csv_path = 'data/files/instacart/csv'+'{}.csv'
 @app.post("/train-sync/")
 async def aqp_train_sync(target: Target):
     """
-    Learn the given dataset
+    Learn the given dataset synchronously
     :param dataset: name of model/dataset (e.g., instacart)
     :param dataset_path: location of the dataset(.csv) (e.g., ~/Projects/datasets/instacart/orders.csv)
     :param metadata_path: root of the .hdf and .csv to be generated(or copied) (e.g., data/files/)
     :param model_path: location of the model (.pkl) to be generated (e.g., model/instances)
+    :param rdc_threshold: (float) RDC threshold (ex, 0.3)
+    :param post_sampling_factor: (int) post sampling factor (ex, 10 or 30)
+    :param sample_size: sample size (ex, 10000000)
     :returns: path of the generated model(.pkl) if suceess
     """
 
@@ -73,6 +76,17 @@ async def aqp_train_sync(target: Target):
 
 @app.post("/train-async/")
 async def aqp_train(target: Target):
+    """
+    Learn the given dataset synchronously
+    :param dataset: name of model/dataset (e.g., instacart)
+    :param dataset_path: location of the dataset(.csv) (e.g., ~/Projects/datasets/instacart/orders.csv)
+    :param metadata_path: root of the .hdf and .csv to be generated(or copied) (e.g., data/files/)
+    :param model_path: location of the model (.pkl) to be generated (e.g., model/instances)
+    :param rdc_threshold: (float) RDC threshold (ex, 0.3)
+    :param post_sampling_factor: (int) post sampling factor (ex, 10 or 30)
+    :param sample_size: sample size (ex, 10000000)
+    :returns: path of the generated model(.pkl) if suceess
+    """
     import subprocess
     p = subprocess.Popen(["python3", "TrainDBCliModelRunner.py", "train2", "RSPN", "model/types/RSPN.py",
                     target.dataset, target.csv_path, target.metadata_path, target.model_path, 
@@ -91,14 +105,14 @@ def aqp_check_process(pid: int):
     :param pid: process ID
     :return: status
     """
-    import psutil
+    import psutil # XXX dependency
     p = psutil.Process(pid)
     status = p.status()
     logger.info(f"status:{status}")
     if status == "zombie":
         status = "finished"
         logger.info(f"status:{status}")
-        #p.kill() #p.terminate()
+        # XXX: p.kill() #p.terminate() --> it doesn't work!
     return {"Status": status}
 
 @app.get("/estimate/")

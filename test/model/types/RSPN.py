@@ -58,6 +58,9 @@ class RSPN(TrainDBModel):
         :param dataset_path: location of the dataset(.csv) (e.g., ~/Projects/datasets/instacart/orders.csv)
         :param metadata_file: location of the .hdf and .csv to be generated(or copied) (e.g., data/files/)
         :param model_path: location of the model (.pkl) to be generated (e.g., model/instances)
+        :param rdc_threshold: (float) RDC threshold (ex, 0.3)
+        :param post_sampling_factor: (int) post sampling factor (ex, 10 or 30)
+        :param sample_size: sample size (ex, 10000000)
         :returns: path of the generated model(.pkl) if suceess
         """
         self.logger.info(f"learn the {dataset} in {dataset_path}")
