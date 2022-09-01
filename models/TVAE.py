@@ -24,12 +24,14 @@ LOGGER = logging.getLogger(__name__)
 
 class TVAE(TrainDBSynopsisModel):
 
+    def __init__(self, **kwargs):
+        self.model_kwargs = kwargs
+
     def train(self, real_data, table_metadata):
         self.columns, _ = self.get_columns(real_data, table_metadata)
 
         LOGGER.info("Training %s", self.__class__.__name__)
-        model_kwargs = {}
-        self.model = sdv.tabular.TVAE(table_metadata=table_metadata, **model_kwargs)
+        self.model = sdv.tabular.TVAE(table_metadata=table_metadata, **self.model_kwargs)
         self.model.fit(real_data)
 
     def save(self, output_path):
