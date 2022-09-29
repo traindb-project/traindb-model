@@ -43,11 +43,11 @@ class TrainDBCliModelRunner():
     syn_data = model.synopsis(row_count)
     return syn_data
 
-  def infer(self, modeltype_class, modeltype_path, model_path, query_string):
+  def infer(self, modeltype_class, modeltype_path, model_path, agg_expr, group_by_column, where_condition):
     mod = self._load_module(modeltype_class, modeltype_path)
     model = getattr(mod, modeltype_class)()
     model.load(model_path)
-    infer_results = model.infer(query_string)
+    infer_results = model.infer(agg_expr, group_by_column, where_condition)
     return infer_results
 
 
@@ -76,7 +76,9 @@ parser_synopsis = subparsers.add_parser('infer', help='inference model command')
 parser_synopsis.add_argument('modeltype_class', type=str, help='(str) modeltype class name')
 parser_synopsis.add_argument('modeltype_uri', type=str, help='(str) path for local model, or uri for remote model')
 parser_synopsis.add_argument('model_path', type=str, help='(str) path to model')
-parser_synopsis.add_argument('query_string', type=str, help='(str) query string to infer approximate results')
+parser_synopsis.add_argument('agg_expr', type=str, help='(str) aggregation expression')
+parser_synopsis.add_argument('group_by_column', type=str, help='(str) column specified in GROUP BY clause')
+parser_synopsis.add_argument('where_condition', type=str, help='(str) filter condition specified in WHERE clause')
 
 args = root_parser.parse_args()
 runner = TrainDBCliModelRunner()
@@ -93,7 +95,7 @@ elif args.cmd == 'synopsis':
   syn_data.to_csv(args.output_file, index=False)
   sys.exit(0)
 elif args.cmd == 'infer':
-  syn_data = runner.infer(args.modeltype_class, args.modeltype_uri, args.model_path, args.query_string)
+  syn_data = runner.infer(args.modeltype_class, args.modeltype_uri, args.model_path, args.agg_expr, args.group_by_column, args.where_condition)
   sys.exit(0)
 else:
   root_parser.print_help()

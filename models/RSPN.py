@@ -15,10 +15,11 @@
 from TrainDBBaseModel import TrainDBModel
 from rspn.ensemble_compilation.spn_ensemble import SPNEnsemble, read_ensemble
 from rspn.ensemble_compilation.graph_representation import SchemaGraph, Table
-from rspn.evaluation.utils import parse_query
 from rspn.aqp_spn.aqp_spn import AQPSPN
+from rspn.evaluation.utils import handle_aggregation
+from rspn.ensemble_compilation.graph_representation import Query, QueryType
 from spn.structure.StatisticalTypes import MetaType
-import numpy as np
+import sqlparse
 import torch
 
 class RSPN(TrainDBModel):
@@ -92,8 +93,27 @@ class RSPN(TrainDBModel):
         self.schema = saved_model['schema']
         self.spn_ensemble = read_ensemble(input_path + "spn_ensembles")
 
-    def infer(self, query_string):
-        query = parse_query(query_string.strip(), self.schema)
+    def infer(self, agg_expr, group_by_column, where_condition):
+        query = Query(self.schema)
+
+        alias_dict = dict()
+        for table in self.schema.tables:
+            query.table_set.add(table.table_name)
+            alias_dict[table.table_name] = table.table_name
+        table = self.schema.tables[0].table_name
+
+        if group_by_column:
+            query.add_group_by(table, group_by_column)
+
+        if agg_expr.lower() == 'count(*)':
+            query.query_type = QueryType.CARDINALITY
+        else:
+            query.query_type = QueryType.AQP
+            handle_aggregation(alias_dict, query, self.schema, sqlparse.parse(agg_expr)[0])
+
+        if where_condition:
+            query.add_where_condition(table, where_condition)
+
         confidence_intervals, aqp_result = self.spn_ensemble.evaluate_query(query,
                                         confidence_sample_size=10000,
                                         confidence_intervals=True)
