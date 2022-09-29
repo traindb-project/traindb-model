@@ -68,7 +68,12 @@ class RSPN(TrainDBModel):
         for table in schema.tables:
             table_set.add(table.table_name)
 
-        aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size, table_set=table_set, column_names=columns)
+        table = schema.table_dictionary[table_metadata['table']].table_name
+        rspn_columns = [table + '.' + col for col in columns]
+        real_data.columns = rspn_columns
+
+        aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
+                         table_set=table_set, column_names=rspn_columns)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         spn_ensemble.add_spn(aqp_spn)

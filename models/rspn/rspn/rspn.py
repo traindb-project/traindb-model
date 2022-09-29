@@ -35,9 +35,11 @@ def build_ds_context(column_names, meta_types, null_values, table_meta_data, no_
     # If metadata is given use this to build domains for categorical values
     unified_column_dictionary = None
     if table_meta_data is not None:
-        unified_column_dictionary = {k: v for table, table_md in table_meta_data.items() if
-                                     table != 'inverted_columns_dict' and table != 'inverted_fd_dict'
-                                     for k, v in table_md['categorical_columns_dict'].items()}
+        for k, v in table_meta_data['categorical_columns_dict']:
+            unified_column_dictionary[k] = v
+        # unified_column_dictionary = {k: v for table, table_md in table_meta_data.items() if
+        #                              table != 'inverted_columns_dict' and table != 'inverted_fd_dict'
+        #                              for k, v in table_md['categorical_columns_dict'].items()}
 
     # domain values
     group_by_attributes = []
