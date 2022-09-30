@@ -275,15 +275,16 @@ def _build_reverse_spn_dict(spn):
     spn.table_meta_data['inverted_columns_dict'] = dict()
     spn.table_meta_data['inverted_fd_dict'] = dict()
     for table in spn.table_meta_data.keys():
-        if table == 'inverted_columns_dict' or table == 'inverted_fd_dict':
+        if table == 'inverted_columns_dict' or table == 'inverted_fd_dict' or table == 'null_values_column':
             continue
-        categorical_colums = spn.table_meta_data[table]['categorical_columns_dict']
+        categorical_colums = spn.table_meta_data['categorical_columns_dict']
         for categorical_column in categorical_colums.keys():
             inverted_dictionary = dict()
             for k, v in categorical_colums[categorical_column].items():
                 inverted_dictionary[v] = k
             spn.table_meta_data['inverted_columns_dict'][categorical_column] = inverted_dictionary
-        if spn.table_meta_data[table].get('fd_dict') is not None:
+
+        if 'fd_dict' in spn.table_meta_data[table]:
             fd_colums = spn.table_meta_data[table]['fd_dict']
             # dwdate.d_dayofweek -> dwdate.d_daynuminweek
             for dest_column, source_column_dictionary in fd_colums.items():
@@ -831,10 +832,11 @@ class SPNEnsemble:
             #     cardinality_stds = np.clip(cardinality_stds, bernoulli_stds, np.inf)
 
         def build_confidence_interval(prediction, confidence_interval_std):
-
+            lb_confidence_interval = confidence_interval_std.item(0)
+            ub_confidence_interval = confidence_interval_std.item(0) if confidence_interval_std.size == 1 else confidence_interval_std.item(1)
             z_factor = scipy.stats.norm.ppf(0.95)
-            lower_bound = prediction - z_factor * confidence_interval_std.item()
-            upper_bound = prediction + z_factor * confidence_interval_std.item()
+            lower_bound = prediction - z_factor * lb_confidence_interval
+            upper_bound = prediction + z_factor * ub_confidence_interval
 
             return lower_bound, upper_bound
 

@@ -19,6 +19,7 @@ from rspn.aqp_spn.aqp_spn import AQPSPN
 from rspn.evaluation.utils import handle_aggregation
 from rspn.ensemble_compilation.graph_representation import Query, QueryType
 from spn.structure.StatisticalTypes import MetaType
+import numpy as np
 import sqlparse
 import torch
 
@@ -65,16 +66,39 @@ class RSPN(TrainDBModel):
         full_join_size = table_size
         full_sample_size = full_join_size
 
+        rspn_table_metadata = dict()
         table_set = set()
         for table in schema.tables:
             table_set.add(table.table_name)
+            rspn_table_metadata[table.table_name] = dict()
 
-        table = schema.table_dictionary[table_metadata['table']].table_name
+        table_obj = schema.table_dictionary[table_metadata['table']]
+        table = table_obj.table_name
         rspn_columns = [table + '.' + col for col in columns]
         real_data.columns = rspn_columns
 
+        relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes]
+        rspn_table_metadata, real_data, relevant_attributes = self.manage_functional_dependencies(
+            table, table_obj, real_data, rspn_table_metadata, relevant_attributes)
+
+        # save if there are entities without FK reference (e.g. orders without customers)
+        outgoing_relationships = self.find_relationships(schema, table, incoming=False)
+        for relationship_obj in outgoing_relationships:
+            fk_attribute_name = table + '.' + relationship_obj.start_attr
+
+            rspn_table_metadata[relationship_obj.identifier] = {
+                'fk_attribute_name': fk_attribute_name,
+                'length': real_data[fk_attribute_name].isna().sum(),
+                # 'length': table_data[fk_attribute_name].isna().sum() * 1 / table_sample_rate,
+                'path': None
+            }
+
+        real_data, rspn_table_metadata, relevant_attributes, del_cat_attributes = \
+            self.impute_null_value_and_replace_categorical_value(
+                table, real_data, rspn_table_metadata, relevant_attributes, 10000)
+
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
-                         table_set=table_set, column_names=rspn_columns)
+                         table_set=table_set, column_names=rspn_columns, table_meta_data=rspn_table_metadata)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         spn_ensemble.add_spn(aqp_spn)
@@ -91,7 +115,7 @@ class RSPN(TrainDBModel):
     def load(self, input_path):
         saved_model = torch.load(input_path + 'model.pth')
         self.schema = saved_model['schema']
-        self.spn_ensemble = read_ensemble(input_path + "spn_ensembles")
+        self.spn_ensemble = read_ensemble(input_path + "spn_ensembles", True)
 
     def infer(self, agg_expr, group_by_column, where_condition):
         query = Query(self.schema)
@@ -120,3 +144,121 @@ class RSPN(TrainDBModel):
         print("confidence intervals:", confidence_intervals)
         print("aqp_result:", aqp_result)
         return aqp_result
+
+    def manage_functional_dependencies(self, table, table_obj, table_data, table_meta_data, relevant_attributes):
+        """
+        Manage functional dependencies
+        * Refactored(Extract Function) from prepare_single_table [kihyuk-nam:2022.08.17]
+        :return: table_meta_data, table_data, relevant_attributes
+        """
+        # logger.info(f"Managing functional dependencies for table {table}")
+        table_meta_data[table] = dict()
+        table_meta_data[table]['fd_dict'] = dict()
+        cols_to_be_dropped = []
+        for attribute_wo_table in table_obj.attributes:
+            attribute = table + '.' + attribute_wo_table
+            fd_children = table_obj.children_fd_attributes(attribute)
+            if len(fd_children) > 0:
+                for child in fd_children:
+                    # logger.info(f"Managing functional dependencies for {child}->{attribute}")
+                    distinct_tuples = table_data.drop_duplicates([attribute, child])[[attribute, child]].values
+                    reverse_dict = {}
+                    for attribute_value, child_value in distinct_tuples:
+                        if reverse_dict.get(attribute_value) is None:
+                            reverse_dict[attribute_value] = []
+                        reverse_dict[attribute_value].append(child_value)
+                    if table_meta_data[table]['fd_dict'].get(attribute) is None:
+                        table_meta_data[table]['fd_dict'][attribute] = dict()
+                    table_meta_data[table]['fd_dict'][attribute][child] = reverse_dict
+                # remove from dataframe and relevant attributes
+                cols_to_be_dropped.append(attribute)
+                relevant_attributes.remove(attribute_wo_table)
+        table_data.drop(columns=cols_to_be_dropped, inplace=True)
+
+        return table_meta_data, table_data, relevant_attributes
+
+    def find_relationships(self, schema_graph, table, incoming=True):
+        relationships = []
+
+        for relationship_obj in schema_graph.relationships:
+
+            if relationship_obj.end == table and incoming:
+                relationships.append(relationship_obj)
+            if relationship_obj.start == table and not incoming:
+                relationships.append(relationship_obj)
+
+        return relationships
+
+    def impute_null_value_and_replace_categorical_value(
+            self, table, table_data, table_meta_data, relevant_attributes, max_distinct_vals):
+        """
+        Impute null value and replace categorical value
+        * Refactored(Extract Function) from prepare_single_table [kihyuk-nam:2022.08.17]
+        :return: table_data, table_meta_data, relevant_attributes, del_cat_attributes
+        """
+
+        # logger.info("Preparing categorical values and null values for table {}".format(table))
+        table_meta_data['categorical_columns_dict'] = {}
+        table_meta_data['null_values_column'] = []
+        del_cat_attributes = []
+
+        for rel_attribute in relevant_attributes:
+
+            attribute = table + '.' + rel_attribute
+
+            # categorical value
+            if table_data.dtypes[attribute] == object:
+
+                # logger.debug("\t\tPreparing categorical values for column {}".format(rel_attribute))
+
+                distinct_vals = table_data[attribute].unique()
+
+                if len(distinct_vals) > max_distinct_vals:
+                    del_cat_attributes.append(rel_attribute)
+                    # logger.info("Ignoring column {} for table {} because "
+                    #             "there are too many categorical values".format(rel_attribute, table))
+                # all values nan does not provide any information
+                elif not table_data[attribute].notna().any():
+                    del_cat_attributes.append(rel_attribute)
+                    # logger.info(
+                    #     "Ignoring column {} for table {} because all values are nan".format(rel_attribute, table))
+                else:
+                    if not table_data[attribute].isna().any():
+                        val_dict = dict(zip(distinct_vals, range(1, len(distinct_vals) + 1)))
+                        val_dict[np.nan] = 0
+                    else:
+                        val_dict = dict(zip(distinct_vals, range(1, len(distinct_vals) + 1)))
+                        val_dict[np.nan] = 0
+                    table_meta_data['categorical_columns_dict'][attribute] = val_dict
+
+                    table_data[attribute] = table_data[attribute].map(val_dict.get)
+                    # because we are paranoid
+                    table_data[attribute] = table_data[attribute].fillna(0)
+                    # apparently slow
+                    # table_data[attribute] = table_data[attribute].replace(val_dict)
+                    table_meta_data['null_values_column'].append(val_dict[np.nan])
+
+            # numerical value
+            else:
+
+                # logger.debug("\t\tPreparing numerical values for column {}".format(rel_attribute))
+
+                # all nan values
+                if not table_data[attribute].notna().any():
+                    del_cat_attributes.append(rel_attribute)
+                    # logger.info(
+                    #     "Ignoring column {} for table {} because all values are nan".format(rel_attribute, table))
+                else:
+                    contains_nan = table_data[attribute].isna().any()
+
+                    # not the best solution but works
+                    unique_null_val = table_data[attribute].mean() + 0.0001
+                    assert not (table_data[attribute] == unique_null_val).any()
+
+                    table_data[attribute] = table_data[attribute].fillna(unique_null_val)
+                    table_meta_data['null_values_column'].append(unique_null_val)
+
+                    if contains_nan:
+                        assert (table_data[attribute] == unique_null_val).any(), "Null value cannot be found"
+
+        return table_data, table_meta_data, relevant_attributes, del_cat_attributes

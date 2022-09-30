@@ -289,7 +289,7 @@ class AQPSPN(CombineSPN, RSPN):
         if any([feature in self.table_meta_data['inverted_columns_dict'].keys() for feature in features]) or \
                 any([any([feature in self.table_meta_data[table]['fd_dict'].keys() for feature in features])
                      for table in self.table_meta_data.keys() if
-                     table != 'inverted_columns_dict' and table != 'inverted_fd_dict']):
+                     table != 'inverted_columns_dict' and table != 'inverted_fd_dict' and table != 'null_values_column']):
             def replace_all_columns(result_tuple):
                 new_result_tuple = tuple()
                 for idx, feature in enumerate(features):
