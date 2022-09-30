@@ -51,3 +51,9 @@ class TrainDBSynopsisModel(TrainDBModel, abc.ABC):
 
   def synopsis(self, row_count):
     pass
+
+class TrainDBInferenceModel(TrainDBModel, abc.ABC):
+  """Base class for all the ``TrainDB`` inference models."""
+
+  def infer(self, agg_expr, group_by_column, where_condition):
+    pass
