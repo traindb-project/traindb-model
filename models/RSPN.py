@@ -12,7 +12,7 @@
    limitations under the License.
 """
 
-from TrainDBBaseModel import TrainDBModel
+from TrainDBBaseModel import TrainDBInferenceModel
 from rspn.ensemble_compilation.spn_ensemble import SPNEnsemble, read_ensemble
 from rspn.ensemble_compilation.graph_representation import SchemaGraph, Table
 from rspn.aqp_spn.aqp_spn import AQPSPN
@@ -23,7 +23,7 @@ import numpy as np
 import sqlparse
 import torch
 
-class RSPN(TrainDBModel):
+class RSPN(TrainDBInferenceModel):
 
     def __init__(self,
                  strategy='single',
