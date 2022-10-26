@@ -141,7 +141,7 @@ class RSPN(TrainDBInferenceModel):
         confidence_intervals, aqp_result = self.spn_ensemble.evaluate_query(query,
                                         confidence_sample_size=10000,
                                         confidence_intervals=True)
-        return np.atleast_1d(aqp_result), np.atleast_1d(confidence_intervals)
+        return np.atleast_2d(aqp_result), np.atleast_2d(confidence_intervals)
 
     def manage_functional_dependencies(self, table, table_obj, table_data, table_meta_data, relevant_attributes):
         """
