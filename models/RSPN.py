@@ -109,13 +109,13 @@ class RSPN(TrainDBInferenceModel):
     def save(self, output_path):
         torch.save({
             'schema': self.schema
-        }, output_path + 'model.pth')
+        }, output_path + '/model.pth')
         self.spn_ensemble.save(output_path + "spn_ensembles")
 
     def load(self, input_path):
-        saved_model = torch.load(input_path + 'model.pth')
+        saved_model = torch.load(input_path + '/model.pth')
         self.schema = saved_model['schema']
-        self.spn_ensemble = read_ensemble(input_path + "spn_ensembles", True)
+        self.spn_ensemble = read_ensemble(input_path + "/spn_ensembles", True)
 
     def infer(self, agg_expr, group_by_column, where_condition):
         query = Query(self.schema)
@@ -141,9 +141,7 @@ class RSPN(TrainDBInferenceModel):
         confidence_intervals, aqp_result = self.spn_ensemble.evaluate_query(query,
                                         confidence_sample_size=10000,
                                         confidence_intervals=True)
-        print("confidence intervals:", confidence_intervals)
-        print("aqp_result:", aqp_result)
-        return aqp_result
+        return np.atleast_2d(aqp_result), np.atleast_2d(confidence_intervals)
 
     def manage_functional_dependencies(self, table, table_obj, table_data, table_meta_data, relevant_attributes):
         """
