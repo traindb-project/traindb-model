@@ -841,6 +841,21 @@ class SPNEnsemble:
             return lower_bound, upper_bound
 
         if query.query_type == QueryType.CARDINALITY:
+            # concatenate group by attribute and cardinality value if there is a group by
+            if len(query.group_bys) > 0:
+                result_tuples = [result_tuple + (cardinalities[i].item(),) for i, result_tuple in
+                                 enumerate(result_tuples_translated)]
+
+                if confidence_intervals:
+                    confidence_values = []
+
+                    for i in range(cardinality_stds.shape[0]):
+                        confidence_values.append(
+                            build_confidence_interval(cardinalities[i][-1], cardinality_stds[i]))
+                    return confidence_values, result_tuples
+
+                return None, result_tuples
+
             if confidence_intervals:
                 return build_confidence_interval(cardinalities, cardinality_stds), cardinalities
             return None, cardinalities
