@@ -110,7 +110,7 @@ class RSPN(TrainDBInferenceModel):
         torch.save({
             'schema': self.schema
         }, output_path + '/model.pth')
-        self.spn_ensemble.save(output_path + "spn_ensembles")
+        self.spn_ensemble.save(output_path + "/spn_ensembles")
 
     def load(self, input_path):
         saved_model = torch.load(input_path + '/model.pth')
