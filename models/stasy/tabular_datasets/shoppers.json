@@ -1,0 +1,188 @@
+{
+    "columns": [
+        {
+            "max": 27.0, 
+            "min": 0.0, 
+            "name": "Administrative", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 3398.75, 
+            "min": 0.0, 
+            "name": "Administrative_Duration", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 24.0, 
+            "min": 0.0, 
+            "name": "Informational", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 2549.375, 
+            "min": 0.0, 
+            "name": "Informational_Duration", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 705.0, 
+            "min": 0.0, 
+            "name": "ProductRelated", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 63973.52223, 
+            "min": 0.0, 
+            "name": "ProductRelated_Duration", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 0.2, 
+            "min": 0.0, 
+            "name": "BounceRates", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 0.2, 
+            "min": 0.0, 
+            "name": "ExitRates", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 361.7637419, 
+            "min": 0.0, 
+            "name": "PageValues", 
+            "type": "continuous"
+        }, 
+        {
+            "max": 1.0, 
+            "min": 0.0, 
+            "name": "SpecialDay", 
+            "type": "continuous"
+        }, 
+        {
+            "i2s": [
+                "Aug", 
+                "Dec", 
+                "Feb", 
+                "Jul", 
+                "June", 
+                "Mar", 
+                "May", 
+                "Nov", 
+                "Oct", 
+                "Sep"
+            ], 
+            "name": "Month", 
+            "size": 10, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "1", 
+                "2", 
+                "3", 
+                "4", 
+                "5", 
+                "6", 
+                "7", 
+                "8"
+            ], 
+            "name": "OperatingSystems", 
+            "size": 8, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "1", 
+                "2", 
+                "3", 
+                "4", 
+                "5", 
+                "6", 
+                "7", 
+                "8", 
+                "9",
+                "10", 
+                "11", 
+                "12", 
+                "13"
+                ], 
+            "name": "Browser", 
+            "size": 13, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "1", 
+                "2", 
+                "3", 
+                "4", 
+                "5", 
+                "6", 
+                "7", 
+                "8", 
+                "9"
+            ], 
+            "name": "Region", 
+            "size": 9, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "1", 
+                "2", 
+                "3", 
+                "4", 
+                "5", 
+                "6", 
+                "7", 
+                "8", 
+                "9",
+                "10", 
+                "11", 
+                "12", 
+                "13", 
+                "14", 
+                "15", 
+                "16", 
+                "17", 
+                "18", 
+                "19", 
+                "20"
+            ], 
+            "name": "TrafficType", 
+            "size": 20, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "New_Visitor", 
+                "Other", 
+                "Returning_Visitor"
+            ], 
+            "name": "VisitorType", 
+            "size": 3, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "FALSE", 
+                "TRUE"
+            ],
+            "name": "Weekend", 
+            "size": 2, 
+            "type": "categorical"
+        }, 
+        {
+            "i2s": [
+                "FALSE", 
+                "TRUE"
+            ], 
+            "name": "label",
+            "size": 2, 
+            "type": "categorical"
+        }
+    ], 
+    "problem_type": "binary_classification"
+}
