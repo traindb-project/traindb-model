@@ -1,0 +1,8 @@
+-- Generative modeltypes
+CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' in 'models/TableGAN.py';
+CREATE MODELTYPE tvae FOR SYNOPSIS AS LOCAL CLASS 'TVAE' in 'models/TVAE.py';
+CREATE MODELTYPE ctgan FOR SYNOPSIS AS LOCAL CLASS 'CTGAN' in 'models/CTGAN.py';
+CREATE MODELTYPE octgan FOR SYNOPSIS AS LOCAL CLASS 'OCTGAN' in 'models/OCTGAN.py';
+
+-- Predictive modeltypes
+CREATE MODELTYPE rspn FOR INFERENCE AS LOCAL CLASS 'RSPN' in 'models/RSPN.py';
