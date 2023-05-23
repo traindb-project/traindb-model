@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# included in all the traindb scripts with source command
-# should not be executed directly
-# also should not be passed any arguments, since we need original $*
-
 home_dir=$(dirname -- "${BASH_SOURCE-$0}")
 home_dir=$(cd -- "$home_dir/.."; pwd -P)
 
