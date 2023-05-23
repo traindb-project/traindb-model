@@ -8,7 +8,7 @@ from sdgym.synthesizers.utils import BGMTransformer
 from octgan.networks import Generator, Discriminator
 from octgan.utils import *
 
-from TrainDBBaseModel import TrainDBSynopsisModel
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 import pandas as pd
 
 LOGGER = logging.getLogger(__name__)
@@ -64,6 +64,19 @@ class OCTGAN(TrainDBSynopsisModel):
         self.generator = saved_model['generator']
         self.cond_generator = saved_model['cond_generator']
         self.columns = saved_model['columns']
+
+    def list_hyperparameters():
+        hparams = []
+        hparams.append(TrainDBModel.createHyperparameter('embedding_dim', 'int', '128', 'the size of the random sample passed to the generator'))
+        hparams.append(TrainDBModel.createHyperparameter('gen_dim', 'tuple or list of ints', '(128, 128)', 'the size of the output samples for each one of the residuals'))
+        hparams.append(TrainDBModel.createHyperparameter('dis_dim', 'tuple or list of ints', '(128, 128)', 'the size of the output samples for each one of the discriminator layers'))
+        hparams.append(TrainDBModel.createHyperparameter('lr', 'float', '2e-3', 'the learning rate for the generator and discriminator'))
+        hparams.append(TrainDBModel.createHyperparameter('l2scale', 'float', '1e-6', 'regularization term'))
+        hparams.append(TrainDBModel.createHyperparameter('batch_size', 'int', '500', 'the number of samples to process in each step'))
+        hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '300', 'the number of training epochs'))
+        hparams.append(TrainDBModel.createHyperparameter('num_split', 'int', '3', 'the number of splits for the discriminator'))
+        return hparams
+
 
     def synopsis(self, row_count):
         LOGGER.info("Synopsis Generating %s", self.__class__.__name__)
