@@ -27,6 +27,8 @@ if parallel:
     cpus = max(1, os.cpu_count() - 2)  # - int(os.getloadavg()[2])
 else:
     cpus = 1
+if __name__ == '__main__':
+    multiprocessing.freeze_support()
 pool = multiprocessing.Pool(processes=cpus)
 
 
