@@ -50,6 +50,11 @@ class TrainDBCliModelRunner():
     infer_results = model.infer(agg_expr, group_by_column, where_condition)
     return infer_results
 
+  def list_hyperparameters(self, modeltype_class, modeltype_path):
+    mod = self._load_module(modeltype_class, modeltype_path)
+    modeltype = getattr(mod, modeltype_class)
+    hyperparams_info = modeltype.list_hyperparameters()
+    return json.dumps(hyperparams_info)
 
 import argparse
 import pandas as pd
@@ -82,6 +87,11 @@ parser_synopsis.add_argument('group_by_column', type=str, help='(str) column spe
 parser_synopsis.add_argument('where_condition', type=str, help='(str) filter condition specified in WHERE clause')
 parser_synopsis.add_argument('output_file', type=str, nargs='?', default='', help='(str) path to save inferred query result file')
 
+parser_train = subparsers.add_parser('list', help='list model hyperparameters')
+parser_train.add_argument('modeltype_class', type=str, help='(str) modeltype class name')
+parser_train.add_argument('modeltype_uri', type=str, help='(str) path for local model, or uri for remote model')
+parser_train.add_argument('output_file', type=str, help='(str) path to .json model hyperparameters file')
+
 args = root_parser.parse_args()
 runner = TrainDBCliModelRunner()
 if args.cmd == 'train':
@@ -104,6 +114,11 @@ elif args.cmd == 'infer':
     with open(args.output_file, 'w') as f:
       writer = csv.writer(f)
       writer.writerows(aqp_result)
+  sys.exit(0)
+elif args.cmd == 'list':
+  json_hyperparams_info = runner.list_hyperparameters(args.modeltype_class, args.modeltype_uri)
+  with open(args.output_file, 'w') as f:
+    f.write(json_hyperparams_info)
   sys.exit(0)
 else:
   root_parser.print_help()
