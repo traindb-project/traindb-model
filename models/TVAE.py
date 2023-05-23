@@ -15,7 +15,7 @@
 import logging
 import rdt
 import sdv
-from TrainDBBaseModel import TrainDBSynopsisModel
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 import pandas as pd
 
 import torch
@@ -44,6 +44,17 @@ class TVAE(TrainDBSynopsisModel):
         self.model = sdv.tabular.TVAE.load(input_path + '/model.pkl')
         saved_model_info = torch.load(input_path + '/model_info.pth')
         self.columns = saved_model_info['columns']
+
+    def list_hyperparameters():
+        hparams = []
+        hparams.append(TrainDBModel.createHyperparameter('embedding_dim', 'int', '128', 'the size of the random sample passed to the generator'))
+        hparams.append(TrainDBModel.createHyperparameter('compress_dims', 'tuple or list of ints', '(128, 128)', 'the size of each hidden layer in the encoder'))
+        hparams.append(TrainDBModel.createHyperparameter('decompress_dims', 'tuple or list of ints', '(128, 128)', 'the size of each hidden layer in the decoder'))
+        hparams.append(TrainDBModel.createHyperparameter('l2scale', 'float', '1e-5', 'regularization term'))
+        hparams.append(TrainDBModel.createHyperparameter('batch_size', 'int', '500', 'the number of samples to process in each step'))
+        hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '300', 'the number of training epochs'))
+        hparams.append(TrainDBModel.createHyperparameter('loss_factor', 'int', '2', 'the multiplier for the reconstruction error'))
+        return hparams
 
     def synopsis(self, row_count):
         LOGGER.info("Synopsis Generating %s", self.__class__.__name__)

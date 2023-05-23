@@ -15,7 +15,7 @@
 import logging
 import rdt
 import sdv
-from TrainDBBaseModel import TrainDBSynopsisModel
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 import pandas as pd
 
 import torch
@@ -44,6 +44,20 @@ class CTGAN(TrainDBSynopsisModel):
         self.model = sdv.tabular.CTGAN.load(input_path + '/model.pkl')
         saved_model_info = torch.load(input_path + '/model_info.pth')
         self.columns = saved_model_info['columns']
+
+    def list_hyperparameters():
+        hparams = []
+        hparams.append(TrainDBModel.createHyperparameter('embedding_dim', 'int', '128', 'the size of the random sample passed to the generator'))
+        hparams.append(TrainDBModel.createHyperparameter('generator_dim', 'tuple or list of ints', '(256, 256)', 'the size of the output samples for each one of the residuals'))
+        hparams.append(TrainDBModel.createHyperparameter('discriminator_dim', 'tuple or list of ints', '(256, 256)', 'the size of the output samples for each one of the discriminator layers'))
+        hparams.append(TrainDBModel.createHyperparameter('generator_lr', 'float', '2e-4', 'the learning rate for the generator'))
+        hparams.append(TrainDBModel.createHyperparameter('generator_decay', 'float', '1e-6', 'generator weight decay for the Adam optimizer'))
+        hparams.append(TrainDBModel.createHyperparameter('discriminator_lr', 'float', '2e-4', 'the learning rate for the discriminator'))
+        hparams.append(TrainDBModel.createHyperparameter('discriminator_decay', 'float', '1e-6', 'discriminator weight decay for the Adam optimizer'))
+        hparams.append(TrainDBModel.createHyperparameter('batch_size', 'int', '500', 'the number of samples to process in each step'))
+        hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '300', 'the number of training epochs'))
+        hparams.append(TrainDBModel.createHyperparameter('pac', 'int', '10', 'the number of samples to group together when applying the discriminator'))
+        return hparams
 
     def synopsis(self, row_count):
         LOGGER.info("Synopsis Generating %s", self.__class__.__name__)
