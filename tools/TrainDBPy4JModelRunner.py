@@ -65,6 +65,11 @@ class TrainDBModelRunner(object):
 
     return mod
 
+  def listHyperparameters(self, modeltype_class, modeltype_path):
+    mod = self._load_module(modeltype_class, modeltype_path)
+    modeltype = getattr(mod, modeltype_class)
+    hyperparams_info = modeltype.list_hyperparameters()
+    return json.dumps(hyperparams_info)
 
 import argparse
 
