@@ -19,7 +19,7 @@ import jaydebeapi
 from py4j.java_gateway import JavaGateway, GatewayParameters, CallbackServerParameters
 import pandas as pd
 
-class TrainDBModelRunner(object):
+class TrainDBPy4JModelRunner():
 
   class Java:
     implements = [ "traindb.engine.TrainDBModelRunner" ]
@@ -78,5 +78,5 @@ root_parser.add_argument('java_port', type=int)
 root_parser.add_argument('python_port', type=int)
 args = root_parser.parse_args()
 
-runner = TrainDBModelRunner()
+runner = TrainDBPy4JModelRunner()
 runner.init(args.java_port, args.python_port)
