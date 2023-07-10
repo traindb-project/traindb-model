@@ -12,48 +12,27 @@
    limitations under the License.
 """
 
-import importlib
 import json
 import os
+from TrainDBBaseModelRunner import TrainDBModelRunner
 
-class TrainDBCliModelRunner():
-
-  def _load_module(self, modeltype_class, modeltype_path):
-    spec = importlib.util.spec_from_file_location(modeltype_class, modeltype_path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    return mod
+class TrainDBCliModelRunner(TrainDBModelRunner):
 
   def train_model(self, modeltype_class, modeltype_path, real_data, table_metadata, model_path):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)(**table_metadata['options'])
-    model.train(real_data, table_metadata)
+    model, train_info = super()._train(modeltype_class, modeltype_path, real_data, table_metadata, args, kwargs)
     model.save(model_path)
-
-    train_info = {}
-    train_info['base_table_rows'] = len(real_data.index)
-    train_info['trained_rows'] = len(real_data.index)
     return json.dumps(train_info)
 
   def generate_synopsis(self, modeltype_class, modeltype_path, model_path, row_count):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)()
-    model.load(model_path)
-    syn_data = model.synopsis(row_count)
+    syn_data = super()._synthesize(modeltype_class, modeltype_path, model_path, row_count)
     return syn_data
 
   def infer(self, modeltype_class, modeltype_path, model_path, agg_expr, group_by_column, where_condition):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)()
-    model.load(model_path)
-    infer_results = model.infer(agg_expr, group_by_column, where_condition)
+    infer_results = super()._infer(modeltype_class, modeltype_path, model_path, agg_expr, group_by_column, where_condition)
     return infer_results
 
   def list_hyperparameters(self, modeltype_class, modeltype_path):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    modeltype = getattr(mod, modeltype_class)
-    hyperparams_info = modeltype.list_hyperparameters()
+    hyperparams_info = super()._hyperparams(modeltype_class, modeltype_path)
     return json.dumps(hyperparams_info)
 
 import argparse

@@ -12,14 +12,13 @@
    limitations under the License.
 """
 
-import importlib
 import json
-import os
 import jaydebeapi
 from py4j.java_gateway import JavaGateway, GatewayParameters, CallbackServerParameters
 import pandas as pd
+from TrainDBBaseModelRunner import TrainDBModelRunner
 
-class TrainDBPy4JModelRunner():
+class TrainDBPy4JModelRunner(TrainDBModelRunner):
 
   class Java:
     implements = [ "traindb.engine.TrainDBModelRunner" ]
@@ -41,34 +40,16 @@ class TrainDBPy4JModelRunner():
     data = pd.DataFrame(curs.fetchall(), columns=header)
     metadata = json.loads(training_metadata)
 
-    mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)(*args, **metadata['options'])
-    model.train(data, metadata)
+    model, train_info = super()._train(modeltype_class, modeltype_path, data, metadata, args, kwargs)
     model.save(model_path)
-
-    train_info = {}
-    train_info['base_table_rows'] = len(data.index)
-    train_info['trained_rows'] = len(data.index)
     return json.dumps(train_info)
 
   def generateSynopsis(self, modeltype_class, modeltype_path, model_path, row_count, output_file):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)()
-    model.load(model_path)
-    syn_data = model.synopsis(row_count)
+    syn_data = super()._synthesize(modeltype_class, modeltype_path, model_path, row_count)
     syn_data.to_csv(output_file, index=False)
 
-  def _load_module(self, modeltype_class, modeltype_path):
-    spec = importlib.util.spec_from_file_location(modeltype_class, modeltype_path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-
-    return mod
-
   def listHyperparameters(self, modeltype_class, modeltype_path):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    modeltype = getattr(mod, modeltype_class)
-    hyperparams_info = modeltype.list_hyperparameters()
+    hyperparams_info = super()._hyperparams(modeltype_class, modeltype_path)
     return json.dumps(hyperparams_info)
 
 import argparse
