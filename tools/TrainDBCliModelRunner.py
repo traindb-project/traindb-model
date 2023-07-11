@@ -18,7 +18,7 @@ from TrainDBBaseModelRunner import TrainDBModelRunner
 
 class TrainDBCliModelRunner(TrainDBModelRunner):
 
-  def train_model(self, modeltype_class, modeltype_path, real_data, table_metadata, model_path):
+  def train_model(self, modeltype_class, modeltype_path, real_data, table_metadata, model_path, args=[], kwargs={}):
     model, train_info = super()._train(modeltype_class, modeltype_path, real_data, table_metadata, args, kwargs)
     model.save(model_path)
     return json.dumps(train_info)
