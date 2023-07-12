@@ -42,7 +42,6 @@ class TrainDBPy4JModelRunner(TrainDBModelRunner):
 
     model, train_info = super()._train(modeltype_class, modeltype_path, data, metadata, args, kwargs)
     model.save(model_path)
-    return json.dumps(train_info)
 
   def generateSynopsis(self, modeltype_class, modeltype_path, model_path, row_count, output_file):
     syn_data = super()._synthesize(modeltype_class, modeltype_path, model_path, row_count)

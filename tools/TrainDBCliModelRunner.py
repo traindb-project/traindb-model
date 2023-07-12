@@ -19,9 +19,8 @@ from TrainDBBaseModelRunner import TrainDBModelRunner
 class TrainDBCliModelRunner(TrainDBModelRunner):
 
   def train_model(self, modeltype_class, modeltype_path, real_data, table_metadata, model_path, args=[], kwargs={}):
-    model, train_info = super()._train(modeltype_class, modeltype_path, real_data, table_metadata, args, kwargs)
+    model = super()._train(modeltype_class, modeltype_path, real_data, table_metadata, args, kwargs)
     model.save(model_path)
-    return json.dumps(train_info)
 
   def generate_synopsis(self, modeltype_class, modeltype_path, model_path, row_count):
     syn_data = super()._synthesize(modeltype_class, modeltype_path, model_path, row_count)
@@ -77,9 +76,7 @@ if args.cmd == 'train':
   data_file = pd.read_csv(args.data_file)
   with open(args.metadata_file) as metadata_file:
     table_metadata = json.load(metadata_file)
-  json_train_info = runner.train_model(args.modeltype_class, args.modeltype_uri, data_file, table_metadata, args.model_path)
-  with open(os.path.join(args.model_path, 'train_info.json'), 'w') as f:
-    f.write(json_train_info)
+  runner.train_model(args.modeltype_class, args.modeltype_uri, data_file, table_metadata, args.model_path)
   sys.exit(0)
 elif args.cmd == 'synopsis':
   syn_data = runner.generate_synopsis(args.modeltype_class, args.modeltype_uri, args.model_path, args.row_count)

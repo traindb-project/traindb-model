@@ -30,10 +30,7 @@ class TrainDBModelRunner():
     mod = self._load_module(modeltype_class, modeltype_path)
     model = getattr(mod, modeltype_class)(*args, **table_metadata['options'])
     model.train(real_data, table_metadata)
-    train_info = {}
-    train_info['base_table_rows'] = len(real_data.index) # FIXME
-    train_info['trained_rows'] = len(real_data.index)
-    return model, train_info
+    return model
 
   def _synthesize(self, modeltype_class, modeltype_path, model_path, row_count):
     mod = self._load_module(modeltype_class, modeltype_path)
