@@ -17,7 +17,7 @@ home_dir=$(cd -- "$home_dir/.."; pwd -P)
 
 mkdir -p $home_dir/output
 
-PYTHONPATH=$home_dir/models:$PYTHONPATH python $home_dir/tools/TrainDBCliModelRunner.py list TableGAN $home_dir/models/TableGAN.py $home_dir/output/tablegan_hyperparams.json
-PYTHONPATH=$home_dir/models:$PYTHONPATH python $home_dir/tools/TrainDBCliModelRunner.py list CTGAN $home_dir/models/CTGAN.py $home_dir/output/ctgan_hyperparams.json
-PYTHONPATH=$home_dir/models:$PYTHONPATH python $home_dir/tools/TrainDBCliModelRunner.py list TVAE $home_dir/models/TVAE.py $home_dir/output/tvae_hyperparams.json
-PYTHONPATH=$home_dir/models:$PYTHONPATH python $home_dir/tools/TrainDBCliModelRunner.py list OCTGAN $home_dir/models/OCTGAN.py $home_dir/output/octgan_hyperparams.json
+python $home_dir/tools/TrainDBCliModelRunner.py list TableGAN $home_dir/models/TableGAN.py $home_dir/output/tablegan_hyperparams.json
+python $home_dir/tools/TrainDBCliModelRunner.py list CTGAN $home_dir/models/CTGAN.py $home_dir/output/ctgan_hyperparams.json
+python $home_dir/tools/TrainDBCliModelRunner.py list TVAE $home_dir/models/TVAE.py $home_dir/output/tvae_hyperparams.json
+python $home_dir/tools/TrainDBCliModelRunner.py list OCTGAN $home_dir/models/OCTGAN.py $home_dir/output/octgan_hyperparams.json
