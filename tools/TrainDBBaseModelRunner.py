@@ -13,10 +13,14 @@
 """
 
 import importlib
+import sys
+import os
 
 class TrainDBModelRunner():
 
   def _load_module(self, modeltype_class, modeltype_path):
+    modeltype_dir = os.path.dirname(os.path.abspath(modeltype_path))
+    sys.path.append(modeltype_dir)
     spec = importlib.util.spec_from_file_location(modeltype_class, modeltype_path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
