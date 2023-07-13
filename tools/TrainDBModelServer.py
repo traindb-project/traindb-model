@@ -156,7 +156,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--host', default='0.0.0.0',
                         help='IP address of the TrainDB Model Server REST API')
-    parser.add_argument('--port', default='8000',
+    parser.add_argument('--port', default='58080',
                         help='port of the TrainDB Model Server REST API')
     parser.add_argument('--ssl_keyfile', nargs='?', default='')
     parser.add_argument('--ssl_certfile', nargs='?', default='')
