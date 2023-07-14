@@ -24,7 +24,7 @@ import sys
 import time
 from typing import Optional
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
 import jaydebeapi
 import jpype
@@ -78,12 +78,12 @@ async def list_hyperparameters(modeltype_class: str):
 @app.post("/modeltype/{modeltype_class}/train")
 async def train(
         modeltype_class: str,
-        model_name: str,
-        jdbc_driver_class: str,
-        db_url: str,
-        db_user: str,
-        db_pwd: str,
-        select_training_data_sql: str,
+        model_name: str = Form(...),
+        jdbc_driver_class: str = Form(...),
+        db_url: str = Form(...),
+        db_user: str = Form(...),
+        db_pwd: str = Form(...),
+        select_training_data_sql: str = Form(...),
         metadata_file: UploadFile = File(...)):
 
     metadata = json.loads(metadata_file.file.read())
@@ -100,11 +100,11 @@ def convert_str(s: str):
         return ""
     return s.strip()
 
-@app.get("/model/{model_name}/synopsis")
+@app.post("/model/{model_name}/synopsis")
 async def synopsis(
-        modeltype_class: str,
         model_name: str,
-        rows: int):
+        modeltype_class: str = Form(...),
+        rows: int = Form(...)):
     modeltype_path = get_modeltype_path(modeltype_class)
     model_path = get_model_path(model_name)
 
@@ -115,13 +115,13 @@ async def synopsis(
     response = StreamingResponse(io.StringIO(syn_data.to_csv(index=False)), media_type="text/csv")
     return response
 
-@app.get("/model/{model_name}/infer")
+@app.post("/model/{model_name}/infer")
 async def infer(
-        modeltype_class: str,
         model_name: str,
-        agg_expr: str,
-        group_by_column: Optional[str] = "",
-        where_condition: Optional[str] = ""):
+        modeltype_class: str = Form(...),
+        agg_expr: str = Form(...),
+        group_by_column: Optional[str] = Form(""),
+        where_condition: Optional[str] = Form("")):
     modeltype_path = get_modeltype_path(modeltype_class)
     model_path = get_model_path(model_name)
     grp_by = convert_str(group_by_column)
