@@ -136,7 +136,7 @@ async def infer(
         cols.append(grp_by)
     cols.append(agg_expr)
     df = pd.DataFrame(aqp_result, columns=cols)
-    response = StreamingResponse(io.StringIO(df.to_csv(index=False)), media_type="text/csv")
+    response = StreamingResponse(io.StringIO(df.to_csv(index=False, header=False)), media_type="text/csv")
     return response
 
 @app.get("/status/")
