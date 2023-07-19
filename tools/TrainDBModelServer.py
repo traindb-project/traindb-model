@@ -139,6 +139,20 @@ async def infer(
     response = StreamingResponse(io.StringIO(df.to_csv(index=False, header=False)), media_type="text/csv")
     return response
 
+@app.get("/model/{model_name}/status")
+def check_model_status(model_name: str):
+    status = "finished"
+    if training_processes:
+        proc_model = next((proc for proc in training_processes if proc["model"] == model_name), None)
+        if proc_model:
+            try:
+                p = psutil.Process(proc_model["pid"])
+                status = p.status()
+            except psutil.NoSuchProcess:
+                status = "finished"
+
+    return status
+
 @app.get("/status/")
 def status():
     res = []
