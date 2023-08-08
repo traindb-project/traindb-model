@@ -23,6 +23,7 @@ import signal
 import sys
 import time
 from typing import Optional
+import zipfile
 
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import StreamingResponse
@@ -137,6 +138,24 @@ async def infer(
     cols.append(agg_expr)
     df = pd.DataFrame(aqp_result, columns=cols)
     response = StreamingResponse(io.StringIO(df.to_csv(index=False, header=False)), media_type="text/csv")
+    return response
+
+@app.get("/model/{model_name}/export")
+def export(model_name: str):
+    model_path = get_model_path(model_name)
+
+    zbuf = io.BytesIO()
+    with zipfile.ZipFile(zbuf, mode='w', compression=zipfile.ZIP_DEFLATED) as zip_file:
+        for root, dirs, files in os.walk(model_path):
+            for file in files:
+                zip_file.write(os.path.join(root, file),
+                               arcname=os.path.join(root.replace(model_path, ""), file))
+
+
+    response = StreamingResponse(iter([zbuf.getvalue()]),
+        media_type="application/x-zip-compressed",
+        headers = { "Content-Disposition": f"attachment; filename=" + model_name + ".zip"}
+    )
     return response
 
 @app.get("/model/{model_name}/status")
