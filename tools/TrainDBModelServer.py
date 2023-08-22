@@ -141,7 +141,7 @@ async def infer(
     return response
 
 @app.get("/model/{model_name}/export")
-def export(model_name: str):
+def export_model(model_name: str):
     model_path = get_model_path(model_name)
 
     zbuf = io.BytesIO()
@@ -157,6 +157,17 @@ def export(model_name: str):
         headers = { "Content-Disposition": f"attachment; filename=" + model_name + ".zip"}
     )
     return response
+
+@app.post("/model/{model_name}/import")
+def import_model(model_name: str,
+                 model_file: UploadFile = File(...)):
+    model_path = get_model_path(model_name)
+    Path(model_path).mkdir(parents=True, exist_ok=True)
+
+    with zipfile.ZipFile(io.BytesIO(model_file.file.read()), mode='r') as zip_file:
+        zip_file.extractall(model_path)
+
+    return {"message": "import '" + model_name + "'"}
 
 @app.get("/model/{model_name}/status")
 def check_model_status(model_name: str):
