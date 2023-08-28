@@ -16,7 +16,7 @@ These models can be used to generate synopsis data or to estimate aggregate valu
 ### Download
 
 You can download TrainDB and this model library in one step by running the following command:
-```console
+```
 $> git clone --recurse-submodules https://github.com/traindb-project/traindb.git
 ```
 
