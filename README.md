@@ -1,42 +1,40 @@
 # traindb-model
-Using these ML models, you can train model instances in ```TrainDB```.
-These model instances can be used to generate synopsis data or to estimate aggregate values in approximate query processing.
+You can train models in ```TrainDB``` using this ML model library.
+These models can be used to generate synopsis data or to estimate aggregate values in approximate query processing.
 
 ## Requirements
 
-* [TrainDB](https://github.com/traindb-project/traindb-prototype)
-* Python 3.x
-* [SDGym](https://github.com/sdv-dev/SDGym)
-  * Using ```pip```: pip install pomegranate==0.14.6 sdgym==0.5.0 
-  * Using ```conda```: conda install -c sdv-dev -c conda-forge sdgym
+* [TrainDB](https://github.com/traindb-project/traindb)
+* Python 3.8+
+* Python virtual environment manager, such as pyenv, conda (optional)
+* Packages used by ML models, such as pytorch - install requirements.txt
+  * Using ```pip```: pip install -r traindb-model/requirements.txt
+  * Using ```conda```: conda install --file traindb-model/requirements.txt
 
 ## Install
 
 ### Download
 
-In ```$TRAINDB_PREFIX``` directory, run the following command:
+You can download TrainDB and this model library in one step by running the following command:
 ```console
-$ cd $TRAINDB_PREFIX
-$ svn co https://github.com/traindb-project/traindb-model/trunk/models
+$> git clone --recurse-submodules https://github.com/traindb-project/traindb.git
 ```
 
 ## Run
 
-### Example
+If you use ```traindb-model``` library with ```TrainDB```, you can run SQL-like statements via ```trsql```.
+Please refer to the README file in [TrainDB](https://github.com/traindb-project/traindb).
 
-You can run SQL-like statements via ```trsql``` in ```TrainDB```.
+You can also train models and generate synthetic data using the CLI model runner.
+For example, you can train a model on the test dataset as follows:
 ```
-$ bin/trsql
-sqlline> !connect jdbc:traindb:<dbms>://<host>
-Enter username for jdbc:traindb:<dbms>://localhost: <username> 
-Enter password for jdbc:traindb:<dbms>://localhost: <password>
-0: jdbc:traindb:<dbms>://<host>> CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' in '$TRAINDB_PREFIX/models/TableGAN.py';
-No rows affected (0.255 seconds)
-0: jdbc:traindb:<dbms>://<host>> TRAIN MODEL tablegan INSTANCE tgan ON <schema>.<table>(<column 1>, <column 2>, ...);
+$> python tools/TrainDBCliModelRunner.py train TableGAN models/TableGAN.py \
+       tests/test_dataset/instacart_small/data.csv \
+       tests/test_dataset/instacart_small/metadata.json \
+       output/
 epoch 1 step 50 tensor(1.1035, grad_fn=<SubBackward0>) tensor(0.7770, grad_fn=<NegBackward>) None
 epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<NegBackward>) None
 ...
-0: jdbc:traindb:<dbms>://<host>> CREATE SYNOPSIS <synopsis> FROM MODEL INSTANCE tgan LIMIT <# of rows to generate>;
-...
-0: jdbc:traindb:<dbms>://<host>> SELECT APPROXIMATE avg(<column>) FROM <schema>.<table>;
+
+$> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py output 1000 sample.txt
 ```
