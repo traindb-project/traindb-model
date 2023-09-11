@@ -143,6 +143,19 @@ class RSPN(TrainDBInferenceModel):
                                         confidence_intervals=True)
         return np.atleast_2d(aqp_result), np.atleast_2d(confidence_intervals)
 
+    def list_hyperparameters():
+        hparams = []
+        hparams.append(TrainDBModel.createHyperparameter('strategy', 'str', 'single', 'type of RSPN ensemble'))
+        hparams.append(TrainDBModel.createHyperparameter('rdc_threshold', 'float', '0.3', 'threshold for determining correlation'))
+        hparams.append(TrainDBModel.createHyperparameter('sample_per_spn', 'int', '10000000', 'the number of samples per spn'))
+        hparams.append(TrainDBModel.createHyperparameter('bloom_filters', 'bool', 'True', 'whether bloom_filter applies or not'))
+        hparams.append(TrainDBModel.createHyperparameter('max_rows_per_hdf_file', 'int', '20000000', 'max rows per hdf file'))
+        hparams.append(TrainDBModel.createHyperparameter('post_sampling_factor', 'int', '30', 'post sampling factor'))
+        hparams.append(TrainDBModel.createHyperparameter('incremental_learning_rate', 'int', '0', 'init learning / incremental'))
+        hparams.append(TrainDBModel.createHyperparameter('incremental_condition', 'str', '', 'predicate for incremental learning'))
+        hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '0', 'the number of training epochs'))
+        return hparams
+
     def manage_functional_dependencies(self, table, table_obj, table_data, table_meta_data, relevant_attributes):
         """
         Manage functional dependencies
