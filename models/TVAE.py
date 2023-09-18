@@ -15,10 +15,10 @@
 import logging
 import rdt
 import sdv
-from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
+import os
 import pandas as pd
-
 import torch
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,14 +35,14 @@ class TVAE(TrainDBSynopsisModel):
         self.model.fit(real_data)
 
     def save(self, output_path):
-        self.model.save(output_path + '/model.pkl')
+        self.model.save(os.path.join(output_path, 'model.pkl'))
         torch.save({
             'columns': self.columns
-        }, output_path + '/model_info.pth')
+        }, os.path.join(output_path, 'model_info.pth'))
 
     def load(self, input_path):
-        self.model = sdv.tabular.TVAE.load(input_path + '/model.pkl')
-        saved_model_info = torch.load(input_path + '/model_info.pth')
+        self.model = sdv.tabular.TVAE.load(os.path.join(input_path, 'model.pkl'))
+        saved_model_info = torch.load(os.path.join(input_path, 'model_info.pth'))
         self.columns = saved_model_info['columns']
 
     def list_hyperparameters():

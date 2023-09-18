@@ -20,6 +20,7 @@ from rspn.evaluation.utils import handle_aggregation
 from rspn.ensemble_compilation.graph_representation import Query, QueryType
 from spn.structure.StatisticalTypes import MetaType
 import numpy as np
+import os
 import sqlparse
 import torch
 
@@ -109,13 +110,13 @@ class RSPN(TrainDBInferenceModel):
     def save(self, output_path):
         torch.save({
             'schema': self.schema
-        }, output_path + '/model.pth')
-        self.spn_ensemble.save(output_path + "/spn_ensembles")
+        }, os.path.join(output_path, 'model.pth'))
+        self.spn_ensemble.save(os.path.join(output_path, 'spn_ensembles'))
 
     def load(self, input_path):
-        saved_model = torch.load(input_path + '/model.pth')
+        saved_model = torch.load(os.path.join(input_path, '/model.pth'))
         self.schema = saved_model['schema']
-        self.spn_ensemble = read_ensemble(input_path + "/spn_ensembles", True)
+        self.spn_ensemble = read_ensemble(os.path.join(input_path, '/spn_ensembles'), True)
 
     def infer(self, agg_expr, group_by_column, where_condition):
         query = Query(self.schema)

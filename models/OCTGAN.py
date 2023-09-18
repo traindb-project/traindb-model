@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -56,10 +57,10 @@ class OCTGAN(TrainDBSynopsisModel):
             'generator': self.generator,
             'cond_generator': self.cond_generator,
             'columns': self.columns
-        }, output_path + '/model.pth')
+        }, os.path.join(output_path, 'model.pth'))
 
     def load(self, input_path):
-        saved_model = torch.load(input_path + '/model.pth')
+        saved_model = torch.load(os.path.join(input_path, 'model.pth'))
         self.transformer = saved_model['transformer']
         self.generator = saved_model['generator']
         self.cond_generator = saved_model['cond_generator']

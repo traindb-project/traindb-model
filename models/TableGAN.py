@@ -16,10 +16,10 @@ import logging
 import rdt
 from sdgym.synthesizers import TableGAN as SDGymTableGAN
 from sdgym.errors import UnsupportedDataset
-from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
+import os
 import pandas as pd
-
 import torch
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,10 +67,10 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
             'transformer': self.transformer,
             'generator': self.generator,
             'columns': self.columns
-        }, output_path + '/model.pth')
+        }, os.path.join(output_path, 'model.pth'))
 
     def load(self, input_path):
-        saved_model = torch.load(input_path + '/model.pth')
+        saved_model = torch.load(os.path.join(input_path, 'model.pth'))
         self.ht = saved_model['ht']
         self.transformer = saved_model['transformer']
         self.generator = saved_model['generator']
