@@ -169,6 +169,13 @@ def import_model(model_name: str,
 
     return {"message": "import '" + model_name + "'"}
 
+@app.post("/model/{model_name}/rename")
+def rename_model(model_name: str,
+                 new_model_name: str):
+    model_path = get_model_path(model_name)
+    new_path = Path(model_path).parent.joinpath(new_model_name)
+    os.rename(model_path, new_path)
+
 @app.get("/model/{model_name}/status")
 def check_model_status(model_name: str):
     status = "finished"
