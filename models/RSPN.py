@@ -12,7 +12,7 @@
    limitations under the License.
 """
 
-from TrainDBBaseModel import TrainDBInferenceModel
+from TrainDBBaseModel import TrainDBModel, TrainDBInferenceModel
 from rspn.ensemble_compilation.spn_ensemble import SPNEnsemble, read_ensemble
 from rspn.ensemble_compilation.graph_representation import SchemaGraph, Table
 from rspn.aqp_spn.aqp_spn import AQPSPN
