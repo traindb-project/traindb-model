@@ -38,7 +38,7 @@ epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<
 
 $> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py output 1000 sample.txt
 ```
-## RSPN
+## Miscellaneous on RSPN
 ### Dependencies
 ```
 // major packages
