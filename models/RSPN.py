@@ -114,10 +114,8 @@ class RSPN(TrainDBInferenceModel):
         self.spn_ensemble.save(os.path.join(output_path, 'spn_ensembles'))
 
     def load(self, input_path):
-        #nam: saved_model = torch.load(os.path.join(input_path, '/model.pth'))
         saved_model = torch.load(os.path.join(input_path, 'model.pth'))
         self.schema = saved_model['schema']
-        #nam: self.spn_ensemble = read_ensemble(os.path.join(input_path, '/spn_ensembles'), True)
         self.spn_ensemble = read_ensemble(os.path.join(input_path, 'spn_ensembles'), True)
 
     def infer(self, agg_expr, group_by_column, where_condition):
