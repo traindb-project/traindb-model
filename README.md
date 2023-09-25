@@ -38,3 +38,26 @@ epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<
 
 $> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py output 1000 sample.txt
 ```
+## Miscellaneous on RSPN
+### Dependencies
+```
+// major packages
+# pip install numpy pandas tables spflow sqlparse psycopg2 scipy torch
+// tested on Python 3.8 on Ubuntu 20.04 See the requirements.txt
+
+// Possible errors due to the spflow package:
+// 1. PyQT5: use PyQT5=5.13 if the error occurs for 5.15.x
+// 2. sklearn erorr: 'sklearn' is deprecated. It should be 'scikit-learn'. See the error message that contains the solution. (set env var)
+```
+### REST API for development and testing using Fast API
+Install the required packages.
+```
+// pip install fastapi uvicorn
+# python3 rest_rspn.py
+```
+The default host address and port (http://0.0.0.0:8000) will be applied if no args specified.
+
+For setting up your own address/port (e.g., http://127.0.0.1:8080):
+```
+(venv) # python3 main.py --rest_host 127.0.0.1 --rest_port 8080
+```
