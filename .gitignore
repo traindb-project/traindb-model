@@ -129,3 +129,5 @@ dmypy.json
 # Nam
 traindb-model2/
 rest_rspn.py
+test_rspn_train.sh
+test_rspn_infer.sh
