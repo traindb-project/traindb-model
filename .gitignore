@@ -125,3 +125,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Nam
+traindb-model2/
+rest_rspn.py
