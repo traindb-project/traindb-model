@@ -48,4 +48,6 @@ $> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py ou
 // Possible errors due to the spflow package:
 // 1. PyQT5: use PyQT5=5.13 if the error occurs for 5.15.x
 // 2. sklearn erorr: 'sklearn' is deprecated. It should be 'scikit-learn'. See the error message that contains the solution. (set env var)
+// 3. networkx error: 'ImportError: cannot import name 'from_numpy_matrix' from 'networkx''
+//                     If its version is 3.x, then downgrade it (e.g., pip install networkx==2.6.3)
 ```
