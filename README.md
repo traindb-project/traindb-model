@@ -38,3 +38,16 @@ epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<
 
 $> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py output 1000 sample.txt
 ```
+## Miscellaneous on RSPN
+### Dependencies
+```
+// major packages
+# pip install numpy pandas tables spflow sqlparse psycopg2 scipy torch
+// tested on Python 3.8 on Ubuntu 20.04 See the requirements.txt
+
+// Possible errors due to the spflow package:
+// 1. PyQT5: use PyQT5=5.13 if the error occurs for 5.15.x
+// 2. sklearn erorr: 'sklearn' is deprecated. It should be 'scikit-learn'. See the error message that contains the solution. (set env var)
+// 3. networkx error: 'ImportError: cannot import name 'from_numpy_matrix' from 'networkx''
+//                     If its version is 3.x, then downgrade it (e.g., pip install networkx==2.6.3)
+```
