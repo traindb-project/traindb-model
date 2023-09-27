@@ -5,11 +5,12 @@ These models can be used to generate synopsis data or to estimate aggregate valu
 ## Requirements
 
 * [TrainDB](https://github.com/traindb-project/traindb)
-* Python 3.8+
-* Python virtual environment manager, such as pyenv, conda (optional)
+* Python 3.8 or 3.9
+* Python virtual environment manager, such as [pyenv](https://github.com/pyenv/pyenv) (optional)
 * Packages used by ML models, such as pytorch - install requirements.txt
-  * Using ```pip```: pip install -r traindb-model/requirements.txt
-  * Using ```conda```: conda install --file traindb-model/requirements.txt
+```
+$> pip install --no-deps -r requirements.txt
+```
 
 ## Install
 
@@ -38,8 +39,10 @@ epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<
 
 $> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py output 1000 sample.txt
 ```
-## Miscellaneous on RSPN
-### Dependencies
+
+## Troubleshooting
+
+### Miscellaneous Dependency Issues on RSPN
 ```
 // major packages
 # pip install numpy pandas tables spflow sqlparse psycopg2 scipy torch
