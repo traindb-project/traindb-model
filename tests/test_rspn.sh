@@ -44,3 +44,13 @@ python $home_dir/tools/TrainDBCliModelRunner.py infer RSPN $home_dir/models/RSPN
 
 echo "SELECT avg(add_to_cart_order) FROM order_products GROUP BY reordered WHERE add_to_cart_order < 4"
 python $home_dir/tools/TrainDBCliModelRunner.py infer RSPN $home_dir/models/RSPN.py $home_dir/output/ "AVG(add_to_cart_order)" "reordered" "add_to_cart_order < 4"
+
+# multiple aggregate expressions
+echo "SELECT count(*), avg(add_to_cart_order) FROM order_products"
+python $home_dir/tools/TrainDBCliModelRunner.py infer RSPN $home_dir/models/RSPN.py $home_dir/output/ "COUNT(*), AVG(add_to_cart_order)" "" ""
+
+echo "SELECT count(*), avg(add_to_cart_order) FROM order_products GROUP BY reordered"
+python $home_dir/tools/TrainDBCliModelRunner.py infer RSPN $home_dir/models/RSPN.py $home_dir/output/ "COUNT(*), AVG(add_to_cart_order)" "reordered" ""
+
+echo "SELECT count(*), avg(add_to_cart_order) FROM order_products GROUP BY reordered WHERE add_to_cart_order < 4"
+python $home_dir/tools/TrainDBCliModelRunner.py infer RSPN $home_dir/models/RSPN.py $home_dir/output/ "COUNT(*), AVG(add_to_cart_order)" "reordered" "add_to_cart_order < 4"

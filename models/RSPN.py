@@ -130,19 +130,32 @@ class RSPN(TrainDBInferenceModel):
         if group_by_column:
             query.add_group_by(table, group_by_column)
 
-        if agg_expr.lower() == 'count(*)':
-            query.query_type = QueryType.CARDINALITY
-        else:
-            query.query_type = QueryType.AQP
-            handle_aggregation(alias_dict, query, self.schema, sqlparse.parse(agg_expr)[0])
-
         if where_condition:
             query.add_where_condition(table, where_condition)
 
-        confidence_intervals, aqp_result = self.spn_ensemble.evaluate_query(query,
-                                        confidence_sample_size=10000,
-                                        confidence_intervals=True)
-        return np.atleast_2d(aqp_result), np.atleast_2d(confidence_intervals)
+        total_aqp_results = []
+        total_confidence_itvs = []
+        agg_list = agg_expr.split(",")
+        for agg in agg_list:
+            if agg.lower() == 'count(*)':
+                query.query_type = QueryType.CARDINALITY
+            else:
+                query.query_type = QueryType.AQP
+                handle_aggregation(alias_dict, query, self.schema, sqlparse.parse(agg)[0])
+
+            agg_confidence_itvs, agg_aqp_results = self.spn_ensemble.evaluate_query(query,
+                                            confidence_sample_size=10000,
+                                            confidence_intervals=True)
+            if len(total_aqp_results) > 0:
+                if group_by_column:
+                    agg_aqp_results = np.delete(agg_aqp_results, 0, 1)
+                total_aqp_results = np.append(total_aqp_results, np.atleast_2d(agg_aqp_results), axis=1)
+                total_confidence_itvs = list(zip(total_confidence_itvs, np.atleast_2d(agg_confidence_itvs)))
+            else:
+                total_aqp_results = np.atleast_2d(agg_aqp_results)
+                total_confidence_itvs = np.atleast_2d(agg_confidence_itvs)
+
+        return np.atleast_2d(total_aqp_results), np.atleast_2d(total_confidence_itvs)
 
     def list_hyperparameters():
         hparams = []
