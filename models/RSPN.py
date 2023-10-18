@@ -52,6 +52,7 @@ class RSPN(TrainDBInferenceModel):
         self.columns = columns
         table_size = len(real_data)
 
+        # 2023.10.18
         schema = SchemaGraph()
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
         spn_ensemble = SPNEnsemble(schema)
