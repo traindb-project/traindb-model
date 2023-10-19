@@ -130,6 +130,13 @@ class RSPN(TrainDBInferenceModel):
         spn_ensemble.add_spn(aqp_spn)
 
     def save(self, output_path):
+        """
+        saves the learned model (spn_ensemble) as two files in the output_path
+        - model.pth: using torch.save
+        - spn_ensembles: using pickle (bz2 compressed) See. spn_ensemble.py#L596
+        :param output_path: dir where the model files are saved
+        :return: files are saved in the output_path
+        """
         torch.save({
             'schema': self.schema
         }, os.path.join(output_path, 'model.pth'))
