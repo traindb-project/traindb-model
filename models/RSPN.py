@@ -23,6 +23,7 @@ import numpy as np
 import os
 import sqlparse
 import torch
+import logging
 
 class RSPN(TrainDBInferenceModel):
 
@@ -48,16 +49,34 @@ class RSPN(TrainDBInferenceModel):
         self.schema = None
         self.spn_ensemble = None
 
+        # setting up a logger (a directory is created where the process creating a RSPN is executed)
+        os.makedirs('test_rspn_logs', exist_ok=True)
+        logging.basicConfig(
+            level=logging.INFO,
+            # [%(threadName)-12.12s]
+            format="%(asctime)s [%(levelname)-5.5s]  %(message)s",
+            handlers=[
+                logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
+                logging.StreamHandler()
+            ])
+        logger = logging.getLogger(__name__)
+
     def train(self, real_data, table_metadata):
         """
         train a model from real_data(.csv) and table_metadata(.json)
-        :return : a learned SPNEnsemble object (which can be saved as .pth file using the save() method)
+        :param real_data: training data (.csv)
+        :param table_metadata: metadata(.json) describing the training data
+        :return: (implicitly) a learned model (an SPNEnsemble/self.spn_ensemble)
         """
+        logger.info(f"Preparing training data")
         columns, categoricals = self.get_columns(real_data, table_metadata)
+        logger.debug(f"columns:{columns}, categoricals:{categoricals}")
         real_data = real_data[columns]
-        self.columns = columns
+        #DEPRECATED self.columns = columns
         table_size = len(real_data)
 
+        logger.debug(f"create an SPNEnsemble with the table_metadata")
+        # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
         schema = SchemaGraph()
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
         spn_ensemble = SPNEnsemble(schema)
