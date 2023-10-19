@@ -37,7 +37,8 @@ class RSPN(TrainDBInferenceModel):
                  post_sampling_factor=30,
                  incremental_learning_rate=0,
                  incremental_condition='',
-                 epochs=0):
+                 epochs=0,
+                 log_level='info'):
         self.strategy = strategy
         self.rdc_threshold = rdc_threshold
         self.samples_per_spn = samples_per_spn
@@ -51,9 +52,10 @@ class RSPN(TrainDBInferenceModel):
         self.spn_ensemble = None
 
         # setting up a logger (a directory is created where the process creating a RSPN is executed)
+        
         os.makedirs('test_rspn_logs', exist_ok=True)
         logging.basicConfig(
-            level=logging.DEBUG,
+            #level=logging.DEBUG,
             # [%(threadName)-12.12s]
             format="%(asctime)s [%(levelname)-5.5s]  %(message)s",
             handlers=[
@@ -61,6 +63,16 @@ class RSPN(TrainDBInferenceModel):
                 logging.StreamHandler()
             ])
         self.logger = logging.getLogger(__name__)
+        if level == 'debug':
+            self.logger.setLevel(logging.DEBUG)
+        elif level == 'info':
+            self.logger.setLevel(logging.INFO)
+        elif level == 'warning':
+            self.logger.setLevel(logging.WARNING)
+        elif level == 'error':
+            self.logger.setLevel(logging.ERROR)
+        elif level == 'critical':
+            self.logger.setLevel(logging.CRITICAL)
 
     def train(self, real_data, table_metadata):
         """
