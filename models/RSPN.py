@@ -23,6 +23,8 @@ import numpy as np
 import os
 import sqlparse
 import torch
+import logging
+import time
 
 class RSPN(TrainDBInferenceModel):
 
@@ -35,7 +37,8 @@ class RSPN(TrainDBInferenceModel):
                  post_sampling_factor=30,
                  incremental_learning_rate=0,
                  incremental_condition='',
-                 epochs=0):
+                 epochs=0,
+                 log_level='info'):
         self.strategy = strategy
         self.rdc_threshold = rdc_threshold
         self.samples_per_spn = samples_per_spn
@@ -45,16 +48,51 @@ class RSPN(TrainDBInferenceModel):
         self.incremental_learning_rate = incremental_learning_rate
         self.incremental_condition = incremental_condition
         self.columns = []
+        self.schema = None
+        self.spn_ensemble = None
+
+        # setting up a logger (a directory is created where the process creating a RSPN is executed)
+        
+        os.makedirs('test_rspn_logs', exist_ok=True)
+        logging.basicConfig(
+            #level=logging.DEBUG,
+            # [%(threadName)-12.12s]
+            format="%(asctime)s [%(levelname)-5.5s]  %(message)s",
+            handlers=[
+                logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
+                logging.StreamHandler()
+            ])
+        self.logger = logging.getLogger(__name__)
+        if log_level == 'debug':
+            self.logger.setLevel(logging.DEBUG)
+        elif log_level == 'info':
+            self.logger.setLevel(logging.INFO)
+        elif log_level == 'warning':
+            self.logger.setLevel(logging.WARNING)
+        elif log_level == 'error':
+            self.logger.setLevel(logging.ERROR)
+        elif log_level == 'critical':
+            self.logger.setLevel(logging.CRITICAL)
 
     def train(self, real_data, table_metadata):
+        """
+        train a model from real_data(.csv) and table_metadata(.json)
+        :param real_data: training data (.csv)
+        :param table_metadata: metadata(.json) describing the training data
+        :return: (implicitly) a learned model (an SPNEnsemble/self.spn_ensemble)
+        """
+        self.logger.info(f"Preparing training data")
         columns, categoricals = self.get_columns(real_data, table_metadata)
+        self.logger.debug(f"columns:{columns}, categoricals:{categoricals}")
         real_data = real_data[columns]
-        self.columns = columns
+        #DEPRECATED self.columns = columns
         table_size = len(real_data)
 
+        self.logger.debug(f"create an SPNEnsemble with the table_metadata")
+        # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
         schema = SchemaGraph()
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
-        spn_ensemble = SPNEnsemble(schema)
+        self.spn_ensemble = SPNEnsemble(schema)
 
         meta_types = []
         null_values = []
@@ -102,12 +140,18 @@ class RSPN(TrainDBInferenceModel):
                          table_set=table_set, column_names=rspn_columns, table_meta_data=rspn_table_metadata)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
-        spn_ensemble.add_spn(aqp_spn)
-
         self.schema = schema
-        self.spn_ensemble = spn_ensemble
+        self.spn_ensemble.add_spn(aqp_spn)
+
 
     def save(self, output_path):
+        """
+        saves the learned model (spn_ensemble) as two files in the output_path
+        - model.pth: using torch.save
+        - spn_ensembles: using pickle (bz2 compressed) See. spn_ensemble.py#L596
+        :param output_path: dir where the model files are saved
+        :return: files are saved in the output_path
+        """
         torch.save({
             'schema': self.schema
         }, os.path.join(output_path, 'model.pth'))
