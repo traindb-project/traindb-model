@@ -63,15 +63,15 @@ class RSPN(TrainDBInferenceModel):
                 logging.StreamHandler()
             ])
         self.logger = logging.getLogger(__name__)
-        if level == 'debug':
+        if log_level == 'debug':
             self.logger.setLevel(logging.DEBUG)
-        elif level == 'info':
+        elif log_level == 'info':
             self.logger.setLevel(logging.INFO)
-        elif level == 'warning':
+        elif log_level == 'warning':
             self.logger.setLevel(logging.WARNING)
-        elif level == 'error':
+        elif log_level == 'error':
             self.logger.setLevel(logging.ERROR)
-        elif level == 'critical':
+        elif log_level == 'critical':
             self.logger.setLevel(logging.CRITICAL)
 
     def train(self, real_data, table_metadata):
