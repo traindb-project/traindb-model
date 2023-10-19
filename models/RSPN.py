@@ -24,6 +24,7 @@ import os
 import sqlparse
 import torch
 import logging
+import time
 
 class RSPN(TrainDBInferenceModel):
 
@@ -52,14 +53,14 @@ class RSPN(TrainDBInferenceModel):
         # setting up a logger (a directory is created where the process creating a RSPN is executed)
         os.makedirs('test_rspn_logs', exist_ok=True)
         logging.basicConfig(
-            level=logging.INFO,
+            level=logging.DEBUG,
             # [%(threadName)-12.12s]
             format="%(asctime)s [%(levelname)-5.5s]  %(message)s",
             handlers=[
                 logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
                 logging.StreamHandler()
             ])
-        logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)
 
     def train(self, real_data, table_metadata):
         """
@@ -68,18 +69,18 @@ class RSPN(TrainDBInferenceModel):
         :param table_metadata: metadata(.json) describing the training data
         :return: (implicitly) a learned model (an SPNEnsemble/self.spn_ensemble)
         """
-        logger.info(f"Preparing training data")
+        self.logger.info(f"Preparing training data")
         columns, categoricals = self.get_columns(real_data, table_metadata)
-        logger.debug(f"columns:{columns}, categoricals:{categoricals}")
+        self.logger.debug(f"columns:{columns}, categoricals:{categoricals}")
         real_data = real_data[columns]
         #DEPRECATED self.columns = columns
         table_size = len(real_data)
 
-        logger.debug(f"create an SPNEnsemble with the table_metadata")
+        self.logger.debug(f"create an SPNEnsemble with the table_metadata")
         # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
         schema = SchemaGraph()
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
-        spn_ensemble = SPNEnsemble(schema)
+        self.spn_ensemble = SPNEnsemble(schema)
 
         meta_types = []
         null_values = []
@@ -127,7 +128,9 @@ class RSPN(TrainDBInferenceModel):
                          table_set=table_set, column_names=rspn_columns, table_meta_data=rspn_table_metadata)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
-        spn_ensemble.add_spn(aqp_spn)
+        self.schema = schema
+        self.spn_ensemble.add_spn(aqp_spn)
+
 
     def save(self, output_path):
         """
