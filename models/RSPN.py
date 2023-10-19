@@ -45,14 +45,19 @@ class RSPN(TrainDBInferenceModel):
         self.incremental_learning_rate = incremental_learning_rate
         self.incremental_condition = incremental_condition
         self.columns = []
+        self.schema = None
+        self.spn_ensemble = None
 
     def train(self, real_data, table_metadata):
+        """
+        train a model from real_data(.csv) and table_metadata(.json)
+        :return : a learned SPNEnsemble object (which can be saved as .pth file using the save() method)
+        """
         columns, categoricals = self.get_columns(real_data, table_metadata)
         real_data = real_data[columns]
         self.columns = columns
         table_size = len(real_data)
 
-        # 2023.10.18
         schema = SchemaGraph()
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
         spn_ensemble = SPNEnsemble(schema)
@@ -104,9 +109,6 @@ class RSPN(TrainDBInferenceModel):
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         spn_ensemble.add_spn(aqp_spn)
-
-        self.schema = schema
-        self.spn_ensemble = spn_ensemble
 
     def save(self, output_path):
         torch.save({
