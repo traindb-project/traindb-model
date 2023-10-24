@@ -77,34 +77,39 @@ class RSPN(TrainDBInferenceModel):
     def train(self, real_data, table_metadata):
         """
         train a model from real_data(.csv) and table_metadata(.json)
+        TODO extend it for multi-table (currently it only takes a single table), it should be a 'for table in tables'
+
         :param real_data: training data (.csv)
         :param table_metadata: metadata(.json) describing the training data
         :return: (implicitly) a learned model (an SPNEnsemble/self.spn_ensemble)
         """
+
+        # 1. Prepare training data
+        # see, 
+        # https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py, which refactored
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py
+        # the original version (deepdb) generated hdf from schema and csv
+
         self.logger.info(f"Preparing training data")
-        columns, categoricals = self.get_columns(real_data, table_metadata)
+        # 1.1. collect table info
+        #    - model_columns (fields in metadata.json)
+        #    - categorical_columns (fileds with type='categorical')
+        #    - table_size
+        # see, models/TrainDBBaseModel.py
+        columns, categoricals = self.get_columns(real_data, table_metadata) 
         self.logger.debug(f"columns:{columns}, categoricals:{categoricals}")
         real_data = real_data[columns]
         #DEPRECATED self.columns = columns
         table_size = len(real_data)
 
-        self.logger.debug(f"create an SPNEnsemble with the table_metadata")
+        # 1.2. generate schema
         # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
         schema = SchemaGraph()
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
-        self.spn_ensemble = SPNEnsemble(schema)
 
-        meta_types = []
-        null_values = []
-        for col in columns:
-            if col in categoricals:
-                meta_types.append(MetaType.DISCRETE)
-            else:
-                meta_types.append(MetaType.REAL)
-            null_values.append(None)
-        full_join_size = table_size
-        full_sample_size = full_join_size
-
+        # 1.4. 
+        # see, 
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L48
         rspn_table_metadata = dict()
         table_set = set()
         for table in schema.tables:
@@ -117,10 +122,19 @@ class RSPN(TrainDBInferenceModel):
         real_data.columns = rspn_columns
 
         relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes]
+
+        # 1.5. manage functional dependencies
+        # see,
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L58
         rspn_table_metadata, real_data, relevant_attributes = self.manage_functional_dependencies(
             table, table_obj, real_data, rspn_table_metadata, relevant_attributes)
 
-        # save if there are entities without FK reference (e.g. orders without customers)
+        # 1.6. TODO add multiplier fields 
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L82
+
+        # 1.7. save if there are entities without FK reference (e.g. orders without customers)
+        # see,
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L126
         outgoing_relationships = self.find_relationships(schema, table, incoming=False)
         for relationship_obj in outgoing_relationships:
             fk_attribute_name = table + '.' + relationship_obj.start_attr
@@ -132,15 +146,50 @@ class RSPN(TrainDBInferenceModel):
                 'path': None
             }
 
+        # 1.8. null value imputation and categorical value replacement
+        # see,
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L137
         real_data, rspn_table_metadata, relevant_attributes, del_cat_attributes = \
             self.impute_null_value_and_replace_categorical_value(
                 table, real_data, rspn_table_metadata, relevant_attributes, 10000)
+        
+        # 1.9. etc TODO
+        # see, L200~L250 in  
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L200
 
+        # 2. learn spn ensemble
+        self.logger.debug(f"create an SPNEnsemble from the training data")
+
+        # 2.1. join data preparation 
+        # collect meta_types and null_values, full_join_size, full_sample_size
+        # TODO complement sampling part: (optional: prepare_sample_hdf,) generate_join_sample, generate_n_samples
+        # see,
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L12
+        # or https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L55
+        # which calls
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L239
+        # or https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L275
+        # which calls
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L330
+        # see, (optional feature) for fast join calculation
+        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L619
+        
+        meta_types = []
+        null_values = []
+        for col in columns:
+            if col in categoricals:
+                meta_types.append(MetaType.DISCRETE)
+            else:
+                meta_types.append(MetaType.REAL)
+            null_values.append(None)
+        full_join_size = table_size
+        full_sample_size = full_join_size
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
                          table_set=table_set, column_names=rspn_columns, table_meta_data=rspn_table_metadata)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         self.schema = schema
+        self.spn_ensemble = SPNEnsemble(schema)
         self.spn_ensemble.add_spn(aqp_spn)
 
 
