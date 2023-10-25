@@ -110,8 +110,9 @@ class RSPN(TrainDBInferenceModel):
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
 
         # 3. prepare rspn_table_metadata and table_set
-        rspn_table_metadata, table_set, real_data, rspn_columns = self.prepare_for_training(schema, real_data, table_metadata, columns)
-        self.logger.debug(f"- table set: {table_set}, real_data.columns: {real_data.columns}, rspn_columns: {rspn_columns}")
+        rspn_table_metadata, table_set, real_data = self.prepare_for_training(schema, real_data, table_metadata, columns)
+        self.logger.debug(f"- table set: {table_set}")
+        self.logger.debug(f"- real_data.columns/rspn_columns: {real_data.columns.values.tolist()}")
 
         # 4. join data preparation : meta_types, null_values, full_join_size, full_sample_size
         # TODO add sampling: (optional: prepare_sample_hdf,) generate_join_sample, generate_n_samples
@@ -130,7 +131,7 @@ class RSPN(TrainDBInferenceModel):
 
         # 5. start training
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
-                         table_set=table_set, column_names=rspn_columns, table_meta_data=rspn_table_metadata)
+                         table_set=table_set, column_names=real_data.columns.values.tolist(), table_meta_data=rspn_table_metadata)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         # 6. wrap up. save the learned model and the schema in the corresponding fields.
@@ -223,10 +224,7 @@ class RSPN(TrainDBInferenceModel):
             rspn_table_metadata[table.table_name] = dict()
         table_obj = schema.table_dictionary[table_metadata['table']]
         table = table_obj.table_name
-        # TODO remove the refactored lines
-        rspn_columns = [table + '.' + col for col in columns] # e.g., [order_products.reordered, order_products.add_to_cart_order]
-        real_data.columns = rspn_columns
-        #real_data.columns = [table + '.' + col for col in columns] # e.g., [order_products.reordered, order_products.add_to_cart_order]
+        real_data.columns = [table + '.' + col for col in columns] # e.g., [order_products.reordered, order_products.add_to_cart_order]
 
         # TODO remove it? currently relevant_attributes == columns
         relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes]
@@ -261,7 +259,7 @@ class RSPN(TrainDBInferenceModel):
         # TODO add if we can use them
         #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L200
         #
-        return rspn_table_metadata, table_set, real_data, rspn_columns
+        return rspn_table_metadata, table_set, real_data
 
 
     def manage_functional_dependencies(self, table, table_obj, table_data, table_meta_data, relevant_attributes):
