@@ -39,6 +39,13 @@ class RSPN(TrainDBInferenceModel):
                  incremental_condition='',
                  epochs=0,
                  log_level='info'):
+        
+        # TODO remove unnecessary fields
+        self.columns = []
+        self.schema = None
+        self.spn_ensemble = None
+        # fields from deepdb
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py
         self.strategy = strategy
         self.rdc_threshold = rdc_threshold
         self.samples_per_spn = samples_per_spn
@@ -47,12 +54,8 @@ class RSPN(TrainDBInferenceModel):
         self.post_sampling_factor = post_sampling_factor
         self.incremental_learning_rate = incremental_learning_rate
         self.incremental_condition = incremental_condition
-        self.columns = []
-        self.schema = None
-        self.spn_ensemble = None
 
-        # setting up a logger (a directory is created where the process creating a RSPN is executed)
-        
+        # setting up a logger (a directory will be created where the process creating a RSPN is executed)        
         os.makedirs('test_rspn_logs', exist_ok=True)
         logging.basicConfig(
             #level=logging.DEBUG,
@@ -76,104 +79,43 @@ class RSPN(TrainDBInferenceModel):
 
     def train(self, real_data, table_metadata):
         """
-        train a model from real_data(.csv) and table_metadata(.json)
+        train a model
+        1. prepare training data from the arguments (real_data(.csv), table_metadata(.json))
         TODO extend it for multi-table (currently it only takes a single table), it should be a 'for table in tables'
-
-        :param real_data: training data (.csv)
-        :param table_metadata: metadata(.json) describing the training data
-        :return: (implicitly) a learned model (an SPNEnsemble/self.spn_ensemble)
+        see, 
+        https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py, 
+        which refactored the original version (deepdb) generated hdf from schema and csv,
+            https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py
+        
+        :param real_data: a Pandas DataFrame of training_data(.csv)
+        :param table_metadata: a deserialized json object of metadata.json
+        :return: None. a learned model(SPNEnsemble object) is saved in the self.spn_ensemble
         """
 
-        # 1. Prepare training data
-        # see, 
-        # https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py, which refactored
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py
-        # the original version (deepdb) generated hdf from schema and csv
-
         self.logger.info(f"Preparing training data")
-        # 1.1. collect table info
-        #    - model_columns (fields in metadata.json)
-        #    - categorical_columns (fileds with type='categorical')
-        #    - table_size
+        # 1. collect table info (model_columns, categorical_columns, table_size)
         # see, models/TrainDBBaseModel.py
         columns, categoricals = self.get_columns(real_data, table_metadata) 
-        self.logger.debug(f"columns:{columns}, categoricals:{categoricals}")
         real_data = real_data[columns]
-        #DEPRECATED self.columns = columns
-        table_size = len(real_data)
+        self.columns = columns      # TODO check references. e.g., rspn.columns
+        table_size = len(real_data) # TODO what if we apply sampling for huge training datasets just like deepdb?
+        # cf. https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L239,275,330
+        self.logger.debug(f"- table size: {table_size}, columns: {columns}, categorical columns: {categoricals}")
 
-        # 1.2. generate schema
+        # 2. prepare schema object
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py#L114
         # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
-        schema = SchemaGraph()
+        #     , which is a variant of https://github.com/DataManagementLab/deepdb-public/tree/master/schemas/
+        schema = SchemaGraph() # ensemble_compilation/graph_representation.py#L76        
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
 
-        # 1.4. 
-        # see, 
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L48
-        rspn_table_metadata = dict()
-        table_set = set()
-        for table in schema.tables:
-            table_set.add(table.table_name)
-            rspn_table_metadata[table.table_name] = dict()
+        # 3. prepare rspn_table_metadata and table_set
+        rspn_table_metadata, table_set, real_data = self.prepare_for_training(schema, real_data)
 
-        table_obj = schema.table_dictionary[table_metadata['table']]
-        table = table_obj.table_name
-        rspn_columns = [table + '.' + col for col in columns]
-        real_data.columns = rspn_columns
-
-        relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes]
-
-        # 1.5. manage functional dependencies
-        # see,
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L58
-        rspn_table_metadata, real_data, relevant_attributes = self.manage_functional_dependencies(
-            table, table_obj, real_data, rspn_table_metadata, relevant_attributes)
-
-        # 1.6. TODO add multiplier fields 
-        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L82
-
-        # 1.7. save if there are entities without FK reference (e.g. orders without customers)
-        # see,
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L126
-        outgoing_relationships = self.find_relationships(schema, table, incoming=False)
-        for relationship_obj in outgoing_relationships:
-            fk_attribute_name = table + '.' + relationship_obj.start_attr
-
-            rspn_table_metadata[relationship_obj.identifier] = {
-                'fk_attribute_name': fk_attribute_name,
-                'length': real_data[fk_attribute_name].isna().sum(),
-                # 'length': table_data[fk_attribute_name].isna().sum() * 1 / table_sample_rate,
-                'path': None
-            }
-
-        # 1.8. null value imputation and categorical value replacement
-        # see,
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L137
-        real_data, rspn_table_metadata, relevant_attributes, del_cat_attributes = \
-            self.impute_null_value_and_replace_categorical_value(
-                table, real_data, rspn_table_metadata, relevant_attributes, 10000)
-        
-        # 1.9. etc TODO
-        # see, L200~L250 in  
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L200
-
-        # 2. learn spn ensemble
-        self.logger.debug(f"create an SPNEnsemble from the training data")
-
-        # 2.1. join data preparation 
-        # collect meta_types and null_values, full_join_size, full_sample_size
-        # TODO complement sampling part: (optional: prepare_sample_hdf,) generate_join_sample, generate_n_samples
-        # see,
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L12
-        # or https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L55
-        # which calls
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L239
-        # or https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L275
-        # which calls
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L330
-        # see, (optional feature) for fast join calculation
-        # https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L619
-        
+        # 4. join data preparation : meta_types, null_values, full_join_size, full_sample_size
+        # TODO add sampling: (optional: prepare_sample_hdf,) generate_join_sample, generate_n_samples
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L12 or L55
+        #      https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L330 (L619)        
         meta_types = []
         null_values = []
         for col in columns:
@@ -184,14 +126,15 @@ class RSPN(TrainDBInferenceModel):
             null_values.append(None)
         full_join_size = table_size
         full_sample_size = full_join_size
+
+        # 5. start training
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
-                         table_set=table_set, column_names=rspn_columns, table_meta_data=rspn_table_metadata)
+                         table_set=table_set, column_names=real_data.columns, table_meta_data=rspn_table_metadata)
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
+        # 6. wrap up. save the learned model and the schema in the corresponding fields.
         self.schema = schema
-        self.spn_ensemble = SPNEnsemble(schema)
-        self.spn_ensemble.add_spn(aqp_spn)
-
+        self.spn_ensemble = SPNEnsemble(schema).add_spn(aqp_spn)
 
     def save(self, output_path):
         """
@@ -263,6 +206,60 @@ class RSPN(TrainDBInferenceModel):
         hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '0', 'the number of training epochs'))
         return hparams
 
+    def prepare_for_training(schema, real_data):
+        """
+        Prepare for training arguments - create rspn_table_metadata, table_set and update real_data
+        see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L255
+        :param schema: a SchemaGraph instance of the training data(data.csv)
+        :param real_data: training data (data.csv)
+        :return: rspn_table_metadata, table_set, real_data
+        """
+        rspn_table_metadata = dict()
+        table_set = set()
+        for table in schema.tables:
+            table_set.add(table.table_name)
+            rspn_table_metadata[table.table_name] = dict()
+        table_obj = schema.table_dictionary[table_metadata['table']]
+        table = table_obj.table_name
+        # TODO remove the refactored lines
+        # rspn_columns = [table + '.' + col for col in columns] # e.g., [order_products.reordered, order_products.add_to_cart_order]
+        # real_data.columns = rspn_columns
+        real_data.columns = [table + '.' + col for col in columns] # e.g., [order_products.reordered, order_products.add_to_cart_order]
+
+        # TODO remove it? currently relevant_attributes == columns
+        relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes]
+
+        # 4. legacy codes
+        # TODO utilize or refactor it.
+        # - manage functional dependencies
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L58
+        rspn_table_metadata, real_data, relevant_attributes = self.manage_functional_dependencies(
+            table, table_obj, real_data, rspn_table_metadata, relevant_attributes)
+
+        # - add multiplier fields 
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L82
+        #.  see, https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py#L53
+        rspn_table_metadata, real_data, relevant_attributes = self.add_multiplier_fields(
+            table, table_obj, real_data, rspn_table_metadata, relevant_attributes, schema, csv_seperator=',')
+
+        # - save if there are entities without FK reference (e.g. orders without customers)
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L126
+        rspn_table_metadata = self.save_entities_without_fk_reference(schema, table, rspn_table_metadata, real_data)
+
+        # - null value imputation and categorical value replacement
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L137
+        real_data, rspn_table_metadata, relevant_attributes, del_cat_attributes = \
+            self.impute_null_value_and_replace_categorical_value(
+                table, real_data, rspn_table_metadata, relevant_attributes, 10000)
+        
+        # - remove categorical columns with too many entries from relevant tables and dataframe
+        # - save modified table
+        # - add table parts without join partners
+        # TODO add if we can use them
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L200
+        #
+        return rspn_table_metadata, table_set, real_data
+
     def manage_functional_dependencies(self, table, table_obj, table_data, table_meta_data, relevant_attributes):
         """
         Manage functional dependencies
@@ -295,6 +292,70 @@ class RSPN(TrainDBInferenceModel):
 
         return table_meta_data, table_data, relevant_attributes
 
+    def add_multiplier_fields(table, table_obj, table_data, table_meta_data, 
+                              relevant_attributes, schema_graph, csv_seperator):
+        """
+        Add multiplier fields
+        :return: table_meta_data, table_data, relevant_attributes, incoming_relationships
+        """
+        logger.info("Preparing multipliers for table {}".format(table))
+        incoming_relationships = find_relationships(schema_graph, table, incoming=True)
+
+        for relationship_obj in incoming_relationships:
+            logger.info("Preparing multiplier {} for table {}".format(relationship_obj.identifier, table))
+
+            neighbor_table = relationship_obj.start
+            neighbor_table_obj = schema_graph.table_dictionary[neighbor_table]
+            neighbor_sample_rate = neighbor_table_obj.sample_rate
+
+            left_attribute = table + '.' + relationship_obj.end_attr
+            right_attribute = neighbor_table + '.' + relationship_obj.start_attr
+
+            neighbor_table_data = read_table_csv(neighbor_table_obj, csv_seperator=csv_seperator).set_index(right_attribute,
+                                                                                                            drop=False)
+            table_data = table_data.set_index(left_attribute, drop=False)
+
+            assert len(table_obj.primary_key) == 1, \
+                "Currently, only single primary keys are supported for table with incoming edges"
+            table_primary_key = table + '.' + table_obj.primary_key[0]
+            assert table_primary_key == left_attribute, "Currently, only references to primary key are supported"
+
+            # fix for new pandas version
+            table_data.index.name = None
+            neighbor_table_data.index.name = None
+            muls = table_data.join(neighbor_table_data, how='left')[[table_primary_key, right_attribute]] \
+                .groupby([table_primary_key]).count()
+
+            mu_nn_col_name = relationship_obj.end + '.' + relationship_obj.multiplier_attribute_name_nn
+            mu_col_name = relationship_obj.end + '.' + relationship_obj.multiplier_attribute_name
+
+            muls.columns = [mu_col_name]
+            # if we just have a sample of the neighbor table we assume larger multipliers
+            muls[mu_col_name] = muls[mu_col_name] * 1 / neighbor_sample_rate
+            muls[mu_nn_col_name] = muls[mu_col_name].replace(to_replace=0, value=1)
+
+            table_data = table_data.join(muls)
+
+            relevant_attributes.append(relationship_obj.multiplier_attribute_name)
+            relevant_attributes.append(relationship_obj.multiplier_attribute_name_nn)
+
+            table_meta_data['incoming_relationship_means'][relationship_obj.identifier] = table_data[mu_nn_col_name].mean()
+
+        return table_meta_data, table_data, relevant_attributes, incoming_relationships 
+
+    def save_entities_without_fk_reference(schema, table, rspn_table_metadata, real_data):
+        outgoing_relationships = self.find_relationships(schema, table, incoming=False)
+        for relationship_obj in outgoing_relationships:
+            fk_attribute_name = table + '.' + relationship_obj.start_attr
+
+            rspn_table_metadata[relationship_obj.identifier] = {
+                'fk_attribute_name': fk_attribute_name,
+                'length': real_data[fk_attribute_name].isna().sum(),
+                # 'length': table_data[fk_attribute_name].isna().sum() * 1 / table_sample_rate,
+                'path': None
+            }
+        return rspn_table_metadata
+        
     def find_relationships(self, schema_graph, table, incoming=True):
         relationships = []
 
