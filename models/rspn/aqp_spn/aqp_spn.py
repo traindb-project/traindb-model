@@ -38,7 +38,7 @@ class AQPSPN(CombineSPN, RSPN):
                       column_names=column_names,
                       table_meta_data=table_meta_data)
         '''
-        self.cspn = CombinedSPN(full_join_size, schema_graph, 
+        self.cspn = CombineSPN(full_join_size, schema_graph, 
                                 relationship_list, table_set=table_set)
         self.rspn = RSPN(meta_types, null_values, full_sample_size, 
                          column_names=column_names, 
