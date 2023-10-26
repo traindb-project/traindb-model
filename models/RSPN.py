@@ -32,106 +32,76 @@ class RSPN(TrainDBInferenceModel):
                  strategy='single',
                  rdc_threshold=0.3,
                  samples_per_spn=10000000,
-                 bloom_filters=True,
+                 bloom_filters=True,             
                  max_rows_per_hdf_file=20000000,
                  post_sampling_factor=30,
                  incremental_learning_rate=0,
                  incremental_condition='',
                  epochs=0,
-                 log_level='info'):
-        
-        # TODO remove unnecessary fields
-        self.columns = []
+                 log_dir='test_rspn_logs',
+                 log_level='debug'):
+        '''
+        The arguments except for rdc_threshold and log_level are not being used in this class. TODO clean up
+        '''
+        self.columns = [] # TODO
         self.schema = None
         self.spn_ensemble = None
-        # fields from deepdb
-        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py
-        self.strategy = strategy
+        self.logger = self.setup_a_logger(log_dir, log_level) # log_dir will be created under the current dir
+
+        # fields from deepdb, see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py
         self.rdc_threshold = rdc_threshold
+        # TODO the following fields are not being used here. clean up unnecessary ones
+        self.strategy = strategy
         self.samples_per_spn = samples_per_spn
-        self.bloom_filters = bloom_filters
+        self.bloom_filters = bloom_filters # for custom learning (see, ~/aqp_spn/custom_spflow/*)
         self.max_rows_per_hdf_file = max_rows_per_hdf_file
         self.post_sampling_factor = post_sampling_factor
         self.incremental_learning_rate = incremental_learning_rate
         self.incremental_condition = incremental_condition
 
-        # setting up a logger (a directory will be created where the process creating a RSPN is executed)        
-        os.makedirs('test_rspn_logs', exist_ok=True)
-        logging.basicConfig(
-            #level=logging.DEBUG,
-            # [%(threadName)-12.12s]
-            format="%(asctime)s [%(levelname)-5.5s]  %(message)s",
-            handlers=[
-                logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
-                logging.StreamHandler()
-            ])
-        self.logger = logging.getLogger(__name__)
-        if log_level == 'debug':
-            self.logger.setLevel(logging.DEBUG)
-        elif log_level == 'info':
-            self.logger.setLevel(logging.INFO)
-        elif log_level == 'warning':
-            self.logger.setLevel(logging.WARNING)
-        elif log_level == 'error':
-            self.logger.setLevel(logging.ERROR)
-        elif log_level == 'critical':
-            self.logger.setLevel(logging.CRITICAL)
-
     def train(self, real_data, table_metadata):
         """
-        train a model
-        1. prepare training data from the arguments (real_data(.csv), table_metadata(.json))
+        train a model real_data(.csv) and table_metadata(.json)
         TODO extend it for multi-table (currently it only takes a single table), it should be a 'for table in tables'
-        see, 
-        https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py, 
-        which refactored the original version (deepdb) generated hdf from schema and csv,
-            https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py
+        see, https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py, 
+             https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py
         
         :param real_data: a Pandas DataFrame of training_data(.csv)
         :param table_metadata: a deserialized json object of metadata.json
         :return: None. a learned model(SPNEnsemble object) is saved in the self.spn_ensemble
         """
-
         self.logger.info(f"Preparing training data")
         # 1. collect table info (model_columns, categorical_columns, table_size)
-        # see, models/TrainDBBaseModel.py
-        columns, categoricals = self.get_columns(real_data, table_metadata) 
+        # TODO 
+        columns, categoricals = self.get_columns(real_data, table_metadata) # see, models/TrainDBBaseModel.py
         real_data = real_data[columns]
-        self.columns = columns      # TODO check references. e.g., rspn.columns
-        table_size = len(real_data) # TODO what if we apply sampling for huge training datasets just like deepdb?
+        self.columns = columns
+        table_size = len(real_data) # TODO cf. deepdb's sampling for huge training datasets
         # cf. https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L239,275,330
         self.logger.debug(f"- table size: {table_size}, columns: {columns}, categorical columns: {categoricals}")
 
         # 2. prepare schema object
         # see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py#L114
         # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
-        #     , which is a variant of https://github.com/DataManagementLab/deepdb-public/tree/master/schemas/
+        #     which is a variant of https://github.com/DataManagementLab/deepdb-public/tree/master/schemas/
         schema = SchemaGraph() # ensemble_compilation/graph_representation.py#L76        
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
 
-        # 3. prepare rspn_table_metadata and table_set
+        # 3. prepare rspn_table_metadata, table_set, and update real_data
         rspn_table_metadata, table_set, real_data = self.prepare_for_training(schema, real_data, table_metadata, columns)
         self.logger.debug(f"- table set: {table_set}")
         self.logger.debug(f"- real_data.columns/rspn_columns: {real_data.columns.values.tolist()}")
 
         # 4. join data preparation : meta_types, null_values, full_join_size, full_sample_size
-        # TODO add sampling: (optional: prepare_sample_hdf,) generate_join_sample, generate_n_samples
-        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L12 or L55
-        #      https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L330 (L619)        
-        meta_types = []
-        null_values = []
-        for col in columns:
-            if col in categoricals:
-                meta_types.append(MetaType.DISCRETE)
-            else:
-                meta_types.append(MetaType.REAL)
-            null_values.append(None)
-        full_join_size = table_size
-        full_sample_size = full_join_size
+        meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(columns, categoricals, table_size)
 
+        self.logger.info(f"Start learning")
         # 5. start training
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py
+        # AQPSQPN(CombinedSPN, RSPN): https://github.com/DataManagementLab/deepdb-public/blob/master/aqp_spn/aqp_spn.py#L19
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
                          table_set=table_set, column_names=real_data.columns.values.tolist(), table_meta_data=rspn_table_metadata)
+        # TODO min_instance_slice = RATIO_MIN_INSTANCE_SLICE * min(sample_size, len(df_samples))
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         # 6. wrap up. save the learned model and the schema in the corresponding fields.
@@ -198,8 +168,10 @@ class RSPN(TrainDBInferenceModel):
 
     def list_hyperparameters():
         hparams = []
-        hparams.append(TrainDBModel.createHyperparameter('strategy', 'str', 'single', 'type of RSPN ensemble'))
         hparams.append(TrainDBModel.createHyperparameter('rdc_threshold', 'float', '0.3', 'threshold for determining correlation'))
+        hparams.append(TrainDBModel.createHyperparameter('log_level', 'str', 'info', 'level of log message'))
+        ''' TODO clean up args: currently the following arguments are not being used.
+        hparams.append(TrainDBModel.createHyperparameter('strategy', 'str', 'single', 'type of RSPN ensemble'))
         hparams.append(TrainDBModel.createHyperparameter('sample_per_spn', 'int', '10000000', 'the number of samples per spn'))
         hparams.append(TrainDBModel.createHyperparameter('bloom_filters', 'bool', 'True', 'whether bloom_filter applies or not'))
         hparams.append(TrainDBModel.createHyperparameter('max_rows_per_hdf_file', 'int', '20000000', 'max rows per hdf file'))
@@ -207,8 +179,31 @@ class RSPN(TrainDBInferenceModel):
         hparams.append(TrainDBModel.createHyperparameter('incremental_learning_rate', 'int', '0', 'init learning / incremental'))
         hparams.append(TrainDBModel.createHyperparameter('incremental_condition', 'str', '', 'predicate for incremental learning'))
         hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '0', 'the number of training epochs'))
+        '''
         return hparams
 
+    def setup_a_logger(log_dir, log_level):    
+        os.makedirs(log_dir, exist_ok=True)
+        logging.basicConfig(
+            format="%(asctime)s [%(levelname)-5.5s]  %(message)s", # [%(threadName)-12.12s]
+            handlers=[
+                logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
+                logging.StreamHandler()
+            ])
+        logger = logging.getLogger(__name__)
+        if log_level == 'debug':
+            logger.setLevel(logging.DEBUG)
+        elif log_level == 'info':
+            logger.setLevel(logging.INFO)
+        elif log_level == 'warning':
+            logger.setLevel(logging.WARNING)
+        elif log_level == 'error':
+            logger.setLevel(logging.ERROR)
+        elif log_level == 'critical':
+            logger.setLevel(logging.CRITICAL)
+
+        return logger
+    
     def prepare_for_training(self, schema, real_data, table_metadata, columns):
         """
         Prepare for training arguments - create rspn_table_metadata, table_set and update real_data
@@ -217,6 +212,7 @@ class RSPN(TrainDBInferenceModel):
         :param real_data: training data (data.csv)
         :return: rspn_table_metadata, table_set, real_data
         """
+        # TODO reorganize them
         rspn_table_metadata = dict()
         table_set = set()
         for table in schema.tables:
@@ -225,40 +221,34 @@ class RSPN(TrainDBInferenceModel):
         table_obj = schema.table_dictionary[table_metadata['table']]
         table = table_obj.table_name
         real_data.columns = [table + '.' + col for col in columns] # e.g., [order_products.reordered, order_products.add_to_cart_order]
+        
+        relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes] # == columns. TODO check!
 
-        # TODO remove it? currently relevant_attributes == columns
-        relevant_attributes = [x for x in table_obj.attributes if x not in table_obj.irrelevant_attributes]
-
-        # 4. legacy codes
-        # TODO utilize or refactor it.
-        # - manage functional dependencies
-        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L58
         rspn_table_metadata, real_data, relevant_attributes = self.manage_functional_dependencies(
             table, table_obj, real_data, rspn_table_metadata, relevant_attributes)
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L58
 
-        # - add multiplier fields 
+
+        # TODO rspn_table_metadata, real_data, relevant_attributes = self.add_multiplier_fields(
+        #    table, table_obj, real_data, rspn_table_metadata, relevant_attributes, schema, csv_seperator=',')
         #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L82
         #   see, https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py#L53
-        # TODO 
-        # rspn_table_metadata, real_data, relevant_attributes = self.add_multiplier_fields(
-        #    table, table_obj, real_data, rspn_table_metadata, relevant_attributes, schema, csv_seperator=',')
 
-        # - save if there are entities without FK reference (e.g. orders without customers)
-        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L126
         rspn_table_metadata = self.save_entities_without_fk_reference(schema, table, rspn_table_metadata, real_data)
-
-        # - null value imputation and categorical value replacement
-        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L137
+        # (e.g. orders without customers)
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L126
+        
         real_data, rspn_table_metadata, relevant_attributes, del_cat_attributes = \
             self.impute_null_value_and_replace_categorical_value(
                 table, real_data, rspn_table_metadata, relevant_attributes, 10000)
+        #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L137
         
+        # TODO do things like
         # - remove categorical columns with too many entries from relevant tables and dataframe
         # - save modified table
         # - add table parts without join partners
-        # TODO add if we can use them
         #   see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py#L200
-        #
+    
         return rspn_table_metadata, table_set, real_data
 
 
@@ -443,3 +433,35 @@ class RSPN(TrainDBInferenceModel):
                         assert (table_data[attribute] == unique_null_val).any(), "Null value cannot be found"
 
         return table_data, table_meta_data, relevant_attributes, del_cat_attributes
+
+    def generate_join_samples(self, columns, categoricals, table_size):
+        """
+        generate join samples (which are currently dummy values)
+        see, https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py#L23, 31, 67, 71
+            by calling generate_n_samples in ~/data_preparation/join_data_preparation.py#L239
+            which can be further sampled for fast join calculation by prepare_sample_hdf(~#L619) 
+        """
+        # set meta_types, null_values 
+        # TODO get real values
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L256, 266, 266
+        #    by calling https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L330
+        meta_types = []
+        null_values = []
+        for col in columns:
+            if col in categoricals:
+                meta_types.append(MetaType.DISCRETE)
+            else:
+                meta_types.append(MetaType.REAL)
+            null_values.append(None)
+
+        # set full_join_size
+        # TODO get a real value
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L250, L286
+        #    by calling https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L179
+        full_join_size = table_size
+
+        # set full_sample_size (which sets to full_join_size if not specified otherwise)
+        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/aqp_spn/aqp_spn.py#L26-L27
+        full_sample_size = full_join_size
+
+        return meta_types, null_values, full_join_size, full_sample_size

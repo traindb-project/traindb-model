@@ -29,6 +29,39 @@ class AQPSPN(CombineSPN, RSPN):
         RSPN.__init__(self, meta_types, null_values, full_sample_size,
                       column_names=column_names,
                       table_meta_data=table_meta_data)
+        """
+        # from CombineSPN
+        self.full_join_size
+        self.schema_graph
+        self.relationship_set
+        self.table_set
+
+        self.relevant_conditions
+        self.comput_{multipliers, depths, mergeable_relationships}
+
+        # from RSPN
+        self.meta_types
+        self.null_values
+        self.full_sample_size
+        self.table_meta_data
+        self.mspn
+        self.ds_context
+        self.use_generated_code
+        self.learning_time
+        self.rdc_threshold
+        self.min_instance_slice
+
+        self.learn
+
+        self._add_null_values_to_ranges
+        self._probability
+        self._augment_not_null_conditions
+        self._indicator_expectation
+        self._indicator_expectation_with_std
+        self._unnormalized_conditional_expectation
+        self._unnormalized_conditional_expectation_with_std
+        self._normalized_conditional_expectation
+        """
 
     def add_dataset(self, dataset):
         """
