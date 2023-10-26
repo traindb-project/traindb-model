@@ -59,6 +59,7 @@ class AQPSPN(CombineSPN, RSPN):
         self.rspn.meta_types
         self.rspn.null_values
         self.rspn.full_sample_size
+        self.rspn.rspn.column_names
         self.rspn.table_meta_data
         self.rspn.mspn
         self.rspn.ds_context
@@ -97,14 +98,14 @@ class AQPSPN(CombineSPN, RSPN):
 
     def _find_scopes_for_variables_indicating_not_null_column(self):
         no_compression_scopes = None
-        if self.column_names is not None:
+        if self.rspn.column_names is not None:
             no_compression_scopes = []
             for table in self.cspn.table_set:
                 table_obj = self.cspn.schema_graph.table_dictionary[table]
                 for attribute in table_obj.no_compression:
                     column_name = table + '.' + attribute
-                    if column_name in self.column_names:
-                        no_compression_scopes.append(self.column_names.index(column_name))
+                    if column_name in self.rspn.column_names:
+                        no_compression_scopes.append(self.rspn.column_names.index(column_name))
         return
 
     def learn_incremental(self, data):
@@ -205,12 +206,12 @@ class AQPSPN(CombineSPN, RSPN):
 
         for (table, multiplier) in expectation.features:
             # title.mul_movie_info_idx.movie_id_nn
-            features.append(self.column_names.index(table + '.' + multiplier))
+            features.append(self.rspn.column_names.index(table + '.' + multiplier))
             inverted_features.append(False)
 
         for (table, multiplier) in expectation.normalizing_multipliers:
             # title.mul_movie_info_idx.movie_id_nn
-            index = self.column_names.index(table + '.' + multiplier)
+            index = self.rspn.column_names.index(table + '.' + multiplier)
             features.append(index)
             normalizing_scope.append(index)
             inverted_features.append(True)
@@ -288,11 +289,11 @@ class AQPSPN(CombineSPN, RSPN):
                                                   group_by_tuples=group_by_tuples)
         for (table, multiplier) in indicator_expectation.nominator_multipliers:
             # title.mul_movie_info_idx.movie_id_nn
-            features.append(self.column_names.index(table + '.' + multiplier))
+            features.append(self.rspn.column_names.index(table + '.' + multiplier))
             inverted_features.append(False)
         if indicator_expectation.denominator_multipliers is not None:
             for (table, multiplier) in indicator_expectation.denominator_multipliers:
-                features.append(self.column_names.index(table + '.' + multiplier))
+                features.append(self.rspn.column_names.index(table + '.' + multiplier))
                 inverted_features.append(True)
         if standard_deviations:
             std_values, exp_values = self.rspn._indicator_expectation_with_std(features, inverted_features=inverted_features,
@@ -311,8 +312,8 @@ class AQPSPN(CombineSPN, RSPN):
         replaced_features = []
         # check if group by attribute is in relevant attributes, could also be omitted because of FD redundancy
         for feature in features:
-            if feature in self.column_names:
-                feature_scope.append(self.column_names.index(feature))
+            if feature in self.rspn.column_names:
+                feature_scope.append(self.rspn.column_names.index(feature))
                 replaced_features.append((feature,))
             elif any([feature in self.rspn.table_meta_data[table]['fd_dict'].keys() for table in self.cspn.table_set]):
                 def find_ancestor(grouping_feature, lineage=None):
@@ -320,7 +321,7 @@ class AQPSPN(CombineSPN, RSPN):
                         lineage = tuple()
                     lineage = (grouping_feature,) + lineage
 
-                    if grouping_feature in self.column_names:
+                    if grouping_feature in self.rspn.column_names:
                         return grouping_feature, lineage
 
                     table = grouping_feature.split('.', 1)[0]
@@ -335,7 +336,7 @@ class AQPSPN(CombineSPN, RSPN):
 
                 # another attribute that is FD ancestor of group by attribute we are interested in
                 source_attribute, lineage = find_ancestor(feature)
-                feature_scope.append(self.column_names.index(source_attribute))
+                feature_scope.append(self.rspn.column_names.index(source_attribute))
                 replaced_features.append(lineage)
 
         scope, group_bys = self._group_by_combinations(copy.copy(feature_scope), range_conditions=range_conditions)
@@ -398,7 +399,7 @@ class AQPSPN(CombineSPN, RSPN):
         group_bys_translated = list(unique_group_bys.keys())
         group_bys = [unique_group_bys[k] for k in group_bys_translated]
 
-        return [self.column_names[feature] for feature in feature_scope], group_bys, group_bys_translated
+        return [self.rspn.column_names[feature] for feature in feature_scope], group_bys, group_bys_translated
 
     def _group_by_combinations(self, feature_scope, range_conditions=None):
         """
@@ -427,12 +428,12 @@ class AQPSPN(CombineSPN, RSPN):
         """
         Translates string conditions to NumericRange and NominalRanges the SPN understands.
         """
-        assert self.column_names is not None, "For probability evaluation column names have to be provided."
+        assert self.rspn.column_names is not None, "For probability evaluation column names have to be provided."
         group_by_columns_merged = None
         if group_by_columns is None or group_by_columns == []:
-            ranges = np.array([None] * len(self.column_names)).reshape(1, len(self.column_names))
+            ranges = np.array([None] * len(self.rspn.column_names)).reshape(1, len(self.rspn.column_names))
         else:
-            ranges = np.array([[None] * len(self.column_names)] * len(group_by_tuples))
+            ranges = np.array([[None] * len(self.rspn.column_names)] * len(group_by_tuples))
             group_by_columns_merged = [table + '.' + attribute for table, attribute in group_by_columns]
 
         for (table, condition) in conditions:
@@ -443,15 +444,15 @@ class AQPSPN(CombineSPN, RSPN):
             if table_obj.table_nn_attribute in condition:
                 full_nn_attribute_name = table + '.' + table_obj.table_nn_attribute
                 # unnecessary because column is never NULL
-                if full_nn_attribute_name not in self.column_names:
+                if full_nn_attribute_name not in self.rspn.column_names:
                     continue
                 # column can become NULL
                 elif condition == table_obj.table_nn_attribute + ' IS NOT NULL':
-                    attribute_index = self.column_names.index(full_nn_attribute_name)
+                    attribute_index = self.rspn.column_names.index(full_nn_attribute_name)
                     ranges[:, attribute_index] = NominalRange([1])
                     continue
                 elif condition == table_obj.table_nn_attribute + ' IS NULL':
-                    attribute_index = self.column_names.index(full_nn_attribute_name)
+                    attribute_index = self.rspn.column_names.index(full_nn_attribute_name)
                     ranges[:, attribute_index] = NominalRange([0])
                     continue
                 else:
@@ -461,7 +462,7 @@ class AQPSPN(CombineSPN, RSPN):
             matching_fd_cols = [column for column in list(self.rspn.table_meta_data[table]['fd_dict'].keys())
                                 if column + '<' in table + '.' + condition or column + '=' in table + '.' + condition
                                 or column + '>' in table + '.' + condition or column + ' ' in table + '.' + condition]
-            matching_cols = [column for column in self.column_names if column + '<' in table + '.' + condition or
+            matching_cols = [column for column in self.rspn.column_names if column + '<' in table + '.' + condition or
                              column + '=' in table + '.' + condition or column + '>' in table + '.' + condition
                              or column + ' ' in table + '.' + condition]
             assert len(matching_cols) == 1 or len(matching_fd_cols) == 1, "Found multiple or no matching columns"
@@ -483,7 +484,7 @@ class AQPSPN(CombineSPN, RSPN):
                             dest_value = float(dest_value)
                         source_values += dictionary[dest_value]
 
-                    if source_attribute in self.column_names:
+                    if source_attribute in self.rspn.column_names:
                         return source_attribute, source_values
                     return find_recursive_values(source_attribute, source_values)
 
@@ -496,7 +497,7 @@ class AQPSPN(CombineSPN, RSPN):
                     literal_list = _literal_list(condition)
 
                 matching_column, values = find_recursive_values(matching_fd_column, literal_list)
-                attribute_index = self.column_names.index(matching_column)
+                attribute_index = self.rspn.column_names.index(matching_column)
 
                 if self.rspn.meta_types[attribute_index] == MetaType.DISCRETE:
                     condition = matching_column + 'IN ('
@@ -515,7 +516,7 @@ class AQPSPN(CombineSPN, RSPN):
                     else:
                         raise NotImplementedError
 
-            attribute_index = self.column_names.index(matching_column)
+            attribute_index = self.rspn.column_names.index(matching_column)
 
             if self.rspn.meta_types[attribute_index] == MetaType.DISCRETE:
 
@@ -611,9 +612,9 @@ class AQPSPN(CombineSPN, RSPN):
 
         if group_by_columns_merged is not None:
             for matching_group_by_idx, column in enumerate(group_by_columns_merged):
-                if column not in self.column_names:
+                if column not in self.rspn.column_names:
                     continue
-                attribute_index = self.column_names.index(column)
+                attribute_index = self.rspn.column_names.index(column)
                 if self.rspn.meta_types[attribute_index] == MetaType.DISCRETE:
                     for idx in range(len(ranges)):
                         literal = group_by_tuples[idx][matching_group_by_idx]
