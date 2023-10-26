@@ -17,51 +17,117 @@ logger = logging.getLogger(__name__)
 
 
 class AQPSPN(CombineSPN, RSPN):
+    """
+    Top-level learner. 
+    It learns from scratch(learn()) or update the existing one (add_dataset())
+    """
 
-    def __init__(self, meta_types, null_values, full_join_size, schema_graph, relationship_list, full_sample_size=None,
+    def __init__(self, meta_types, null_values, full_join_size, schema_graph, 
+                 relationship_list=None, full_sample_size=None,
                  table_set=None, column_names=None, table_meta_data=None):
 
+        # set full_sample_size (default = full_join_size)
         full_sample_size = full_sample_size
         if full_sample_size is None:
             full_sample_size = full_join_size
 
+        # initialize fields from CombineSPN and RSPN
+        '''
         CombineSPN.__init__(self, full_join_size, schema_graph, relationship_list, table_set=table_set)
         RSPN.__init__(self, meta_types, null_values, full_sample_size,
                       column_names=column_names,
                       table_meta_data=table_meta_data)
+        '''
+        self.cspn = CombinedSPN(full_join_size, schema_graph, 
+                                relationship_list, table_set=table_set)
+        self.rspn = RSPN(meta_types, null_values, full_sample_size, 
+                         column_names=column_names, 
+                         table_meta_data=table_meta_data)
         """
         # from CombineSPN
-        self.full_join_size
-        self.schema_graph
-        self.relationship_set
-        self.table_set
+        self.cspn.full_join_size
+        self.cspn.schema_graph
+        self.cspn.relationship_set # not being used (since it comes as None from train()/RSPN.py)
+        self.cspn.table_set
 
-        self.relevant_conditions
-        self.comput_{multipliers, depths, mergeable_relationships}
+        self.cspn.relevant_conditions
+        self.cspn.comput_multipliers
+        self.cspn.compute_depths
+        self.cspn.compute_mergeable_relationships
 
         # from RSPN
-        self.meta_types
-        self.null_values
-        self.full_sample_size
-        self.table_meta_data
-        self.mspn
-        self.ds_context
-        self.use_generated_code
-        self.learning_time
-        self.rdc_threshold
-        self.min_instance_slice
+        self.rspn.meta_types
+        self.rspn.null_values
+        self.rspn.full_sample_size
+        self.rspn.table_meta_data
+        self.rspn.mspn
+        self.rspn.ds_context
+        self.rspn.use_generated_code # not being used
+        self.rspn.learning_time      # not being used
+        self.rspn.rdc_threshold           # not being used here (updated after RSPN.learn())
+        self.rspn.min_instance_slice      # not being used here (updated after RSPN.learn())
 
-        self.learn
+        self.rspn.learn
 
-        self._add_null_values_to_ranges
-        self._probability
-        self._augment_not_null_conditions
-        self._indicator_expectation
-        self._indicator_expectation_with_std
-        self._unnormalized_conditional_expectation
-        self._unnormalized_conditional_expectation_with_std
-        self._normalized_conditional_expectation
+        self.rspn._add_null_values_to_ranges
+        self.rspn._probability                               # not being used here
+        self.rspn._augment_not_null_conditions
+        self.rspn._indicator_expectation
+        self.rspn._indicator_expectation_with_std
+        self.rspn._unnormalized_conditional_expectation
+        self.rspn._unnormalized_conditional_expectation_with_std
+        self.rspn._normalized_conditional_expectation
         """
+
+    def learn(self, train_data, rdc_threshold=0.3, min_instances_slice=1, max_sampling_threshold_cols=10000,
+              max_sampling_threshold_rows=100000, bloom_filters=False):
+        """
+        start learning by calling RSPN.learn which calls learn_mspn in rspn.learning.rspn_learning.py,
+        which calls learn_structure in rspn.learning.structure_learning.py
+        """
+
+        # find scopes for variables which indicate not null column
+        no_compression_scopes = self._find_scopes_for_variables_indicating_not_null_column()
+
+        #RSPN.learn(self, train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
+        self.rspn.learn(self, train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
+                   max_sampling_threshold_cols=max_sampling_threshold_cols,
+                   max_sampling_threshold_rows=max_sampling_threshold_rows,
+                   no_compression_scopes=no_compression_scopes)
+
+    def _find_scopes_for_variables_indicating_not_null_column():
+        no_compression_scopes = None
+        if self.column_names is not None:
+            no_compression_scopes = []
+            for table in self.cspn.table_set:
+                table_obj = self.cspn.schema_graph.table_dictionary[table]
+                for attribute in table_obj.no_compression:
+                    column_name = table + '.' + attribute
+                    if column_name in self.column_names:
+                        no_compression_scopes.append(self.column_names.index(column_name))
+        return
+
+    def learn_incremental(self, data):
+        """
+
+        :param data:
+        :return:
+        """
+
+        logging.info(f"Incremental adding {len(data)} datasets to SPN ...")
+        add_ds_start_t = perf_counter()
+        i = 0
+        for ds in data:
+            self.add_dataset(ds)
+            if i % 10000 == 0:
+                logging.debug(f"\t{i}/{len(data)} ")
+            i += 1
+        logging.debug(f"{i}/{len(data)} ")
+        add_ds_end_t = perf_counter()
+        logging.info(
+            "f{len(data)} datasets inserted in {(add_ds_end_t - add_ds_start_t)} secs. ({(add_ds_end_t - add_ds_start_t)/len(data)} sec./dataset")
+
+        return self
 
     def add_dataset(self, dataset):
         """
@@ -87,54 +153,13 @@ class AQPSPN(CombineSPN, RSPN):
         """
 
         logging.debug(f"add dataset (incremental)")
-        assert len(self.mspn.scope) == len(
+        assert len(self.rspn.mspn.scope) == len(
             dataset), "dataset has a differnt number of columns as spn. spn expects " + str(
-            str(len(self.mspn.scope))) + " columns, but dataset has " + str(len(dataset)) + " columns"
+            str(len(self.rspn.mspn.scope))) + " columns, but dataset has " + str(len(dataset)) + " columns"
 
-        cluster_center_update_dataset(self.mspn, dataset)
-        self.full_sample_size += 1
-        self.full_join_size += 1
-
-    def learn(self, train_data, rdc_threshold=0.3, min_instances_slice=1, max_sampling_threshold_cols=10000,
-              max_sampling_threshold_rows=100000, bloom_filters=False):
-
-        # find scopes for variables which indicate not null column
-        no_compression_scopes = None
-        if self.column_names is not None:
-            no_compression_scopes = []
-            for table in self.table_set:
-                table_obj = self.schema_graph.table_dictionary[table]
-                for attribute in table_obj.no_compression:
-                    column_name = table + '.' + attribute
-                    if column_name in self.column_names:
-                        no_compression_scopes.append(self.column_names.index(column_name))
-
-        RSPN.learn(self, train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
-                   max_sampling_threshold_cols=max_sampling_threshold_cols,
-                   max_sampling_threshold_rows=max_sampling_threshold_rows,
-                   no_compression_scopes=no_compression_scopes)
-
-    def learn_incremental(self, data):
-        """
-
-        :param data:
-        :return:
-        """
-
-        logging.info(f"Incremental adding {len(data)} datasets to SPN ...")
-        add_ds_start_t = perf_counter()
-        i = 0
-        for ds in data:
-            self.add_dataset(ds)
-            if i % 10000 == 0:
-                logging.debug(f"\t{i}/{len(data)} ")
-            i += 1
-        logging.debug(f"{i}/{len(data)} ")
-        add_ds_end_t = perf_counter()
-        logging.info(
-            "f{len(data)} datasets inserted in {(add_ds_end_t - add_ds_start_t)} secs. ({(add_ds_end_t - add_ds_start_t)/len(data)} sec./dataset")
-
-        return self
+        cluster_center_update_dataset(self.rspn.mspn, dataset)
+        self.rspn.full_sample_size += 1
+        self.cspn.full_join_size += 1
 
     def evaluate_expectation(self, expectation, standard_deviations=False, gen_code_stats=None):
         """
@@ -191,7 +216,7 @@ class AQPSPN(CombineSPN, RSPN):
             inverted_features.append(True)
 
         std_values, exp_values = \
-            self._normalized_conditional_expectation(features, inverted_features=inverted_features,
+            self.rspn._normalized_conditional_expectation(features, inverted_features=inverted_features,
                                                      normalizing_scope=normalizing_scope,
                                                      range_conditions=range_conditions,
                                                      standard_deviations=standard_deviations,
@@ -231,9 +256,9 @@ class AQPSPN(CombineSPN, RSPN):
                 # the probability part
                 exp_values = np.ones(exp_values.shape)
                 if standard_deviations:
-                    exp_values *= self._unnormalized_conditional_expectation(features)
+                    exp_values *= self.rspn._unnormalized_conditional_expectation(features)
                 else:
-                    std, exp = self._unnormalized_conditional_expectation_with_std(features)
+                    std, exp = self.rspn._unnormalized_conditional_expectation_with_std(features)
                     std_values = np.ones(exp_values.shape) * std
                     exp_values *= exp
 
@@ -270,12 +295,12 @@ class AQPSPN(CombineSPN, RSPN):
                 features.append(self.column_names.index(table + '.' + multiplier))
                 inverted_features.append(True)
         if standard_deviations:
-            std_values, exp_values = self._indicator_expectation_with_std(features, inverted_features=inverted_features,
+            std_values, exp_values = self.rspn._indicator_expectation_with_std(features, inverted_features=inverted_features,
                                                                           range_conditions=range_conditions)
 
             return postprocess_exps(indicator_expectation, features, exp_values, std_values)
 
-        exp_values = self._indicator_expectation(features, inverted_features=inverted_features,
+        exp_values = self.rspn._indicator_expectation(features, inverted_features=inverted_features,
                                                  range_conditions=range_conditions, gen_code_stats=gen_code_stats)
         return postprocess_exps(indicator_expectation, features, exp_values, None)
 
@@ -289,7 +314,7 @@ class AQPSPN(CombineSPN, RSPN):
             if feature in self.column_names:
                 feature_scope.append(self.column_names.index(feature))
                 replaced_features.append((feature,))
-            elif any([feature in self.table_meta_data[table]['fd_dict'].keys() for table in self.table_set]):
+            elif any([feature in self.rspn.table_meta_data[table]['fd_dict'].keys() for table in self.cspn.table_set]):
                 def find_ancestor(grouping_feature, lineage=None):
                     if lineage is None:
                         lineage = tuple()
@@ -299,7 +324,7 @@ class AQPSPN(CombineSPN, RSPN):
                         return grouping_feature, lineage
 
                     table = grouping_feature.split('.', 1)[0]
-                    source_attributes = self.table_meta_data[table]['fd_dict'][grouping_feature].keys()
+                    source_attributes = self.rspn.table_meta_data[table]['fd_dict'][grouping_feature].keys()
                     if len(source_attributes) > 1:
                         logger.warning(f"Current functional dependency handling is not designed for attributes with "
                                        f"more than one ancestor such as {grouping_feature}. This can lead to error in "
@@ -319,28 +344,28 @@ class AQPSPN(CombineSPN, RSPN):
 
         # replace by alternative, i.e. replace by real categorical values or replace by categorical value of top
         # fd attribute
-        if any([feature in self.table_meta_data['inverted_columns_dict'].keys() for feature in features]) or \
-                any([any([feature in self.table_meta_data[table]['fd_dict'].keys() for feature in features])
-                     for table in self.table_meta_data.keys() if
+        if any([feature in self.rspn.table_meta_data['inverted_columns_dict'].keys() for feature in features]) or \
+                any([any([feature in self.rspn.table_meta_data[table]['fd_dict'].keys() for feature in features])
+                     for table in self.rspn.table_meta_data.keys() if
                      table != 'inverted_columns_dict' and table != 'inverted_fd_dict' and table != 'null_values_column']):
             def replace_all_columns(result_tuple):
                 new_result_tuple = tuple()
                 for idx, feature in enumerate(features):
                     lineage = replaced_features[idx]
                     # categorical column
-                    if feature in self.table_meta_data['inverted_columns_dict'].keys():
-                        replaced_value = self.table_meta_data['inverted_columns_dict'][feature][result_tuple[idx]]
+                    if feature in self.rspn.table_meta_data['inverted_columns_dict'].keys():
+                        replaced_value = self.rspn.table_meta_data['inverted_columns_dict'][feature][result_tuple[idx]]
                         new_result_tuple += (replaced_value,)
                     # categorical column with top fd attribute
                     elif feature != lineage[0]:
                         # e.g. #MFRG_1111
-                        replaced_value = self.table_meta_data['inverted_columns_dict'][lineage[0]][
+                        replaced_value = self.rspn.table_meta_data['inverted_columns_dict'][lineage[0]][
                             result_tuple[idx]]
                         for idx, attribute in enumerate(lineage):
                             if idx == 0:
                                 continue
                             # e.g. #MFRG_1111 > #MFRG_11 > #MFRG_1
-                            replaced_value = self.table_meta_data['inverted_fd_dict'][lineage[idx - 1]][lineage[idx]][
+                            replaced_value = self.rspn.table_meta_data['inverted_fd_dict'][lineage[idx - 1]][lineage[idx]][
                                 replaced_value]
                         new_result_tuple += (replaced_value,)
                     else:
@@ -383,19 +408,19 @@ class AQPSPN(CombineSPN, RSPN):
         """
 
         if range_conditions is None:
-            range_conditions = np.array([None] * len(self.mspn.scope)).reshape(1, len(self.mspn.scope))
+            range_conditions = np.array([None] * len(self.rspn.mspn.scope)).reshape(1, len(self.rspn.mspn.scope))
         else:
-            range_conditions = self._add_null_values_to_ranges(range_conditions)
+            range_conditions = self.rspn._add_null_values_to_ranges(range_conditions)
 
-        range_conditions = self._augment_not_null_conditions(feature_scope, range_conditions)
-        range_conditions = self._add_null_values_to_ranges(range_conditions)
+        range_conditions = self.rspn._augment_not_null_conditions(feature_scope, range_conditions)
+        range_conditions = self.rspn._add_null_values_to_ranges(range_conditions)
 
         _node_distinct_values = {IdentityNumericLeaf: identity_distinct_ranges,
                                  Categorical: categorical_distinct_ranges}
         _node_likelihoods_range = {IdentityNumericLeaf: identity_likelihood_range,
                                    Categorical: categorical_likelihood_range}
 
-        return group_by_combinations(self.mspn, self.ds_context, feature_scope, range_conditions,
+        return group_by_combinations(self.rspn.mspn, self.rspn.ds_context, feature_scope, range_conditions,
                                      node_distinct_vals=_node_distinct_values, node_likelihoods=_node_likelihoods_range)
 
     def _parse_conditions(self, conditions, group_by_columns=None, group_by_tuples=None):
@@ -412,7 +437,7 @@ class AQPSPN(CombineSPN, RSPN):
 
         for (table, condition) in conditions:
 
-            table_obj = self.schema_graph.table_dictionary[table]
+            table_obj = self.cspn.schema_graph.table_dictionary[table]
 
             # is an nn attribute condition
             if table_obj.table_nn_attribute in condition:
@@ -433,7 +458,7 @@ class AQPSPN(CombineSPN, RSPN):
                     raise NotImplementedError
 
             # for other attributes parse. Find matching attr.
-            matching_fd_cols = [column for column in list(self.table_meta_data[table]['fd_dict'].keys())
+            matching_fd_cols = [column for column in list(self.rspn.table_meta_data[table]['fd_dict'].keys())
                                 if column + '<' in table + '.' + condition or column + '=' in table + '.' + condition
                                 or column + '>' in table + '.' + condition or column + ' ' in table + '.' + condition]
             matching_cols = [column for column in self.column_names if column + '<' in table + '.' + condition or
@@ -447,8 +472,8 @@ class AQPSPN(CombineSPN, RSPN):
                 matching_fd_column = matching_fd_cols[0]
 
                 def find_recursive_values(column, dest_values):
-                    source_attribute, dictionary = list(self.table_meta_data[table]['fd_dict'][column].items())[0]
-                    if len(self.table_meta_data[table]['fd_dict'][column].keys()) > 1:
+                    source_attribute, dictionary = list(self.rspn.table_meta_data[table]['fd_dict'][column].items())[0]
+                    if len(self.rspn.table_meta_data[table]['fd_dict'][column].keys()) > 1:
                         logger.warning(f"Current functional dependency handling is not designed for attributes with "
                                        f"more than one ancestor such as {column}. This can lead to error in further "
                                        f"processing.")
@@ -473,7 +498,7 @@ class AQPSPN(CombineSPN, RSPN):
                 matching_column, values = find_recursive_values(matching_fd_column, literal_list)
                 attribute_index = self.column_names.index(matching_column)
 
-                if self.meta_types[attribute_index] == MetaType.DISCRETE:
+                if self.rspn.meta_types[attribute_index] == MetaType.DISCRETE:
                     condition = matching_column + 'IN ('
                     for i, value in enumerate(values):
                         condition += '"' + value + '"'
@@ -492,9 +517,9 @@ class AQPSPN(CombineSPN, RSPN):
 
             attribute_index = self.column_names.index(matching_column)
 
-            if self.meta_types[attribute_index] == MetaType.DISCRETE:
+            if self.rspn.meta_types[attribute_index] == MetaType.DISCRETE:
 
-                val_dict = self.table_meta_data[table]['categorical_columns_dict'][matching_column]
+                val_dict = self.rspn.table_meta_data[table]['categorical_columns_dict'][matching_column]
 
                 if '=' in condition:
                     column, literal = condition.split('=', 1)
@@ -514,8 +539,8 @@ class AQPSPN(CombineSPN, RSPN):
                     literal_list = _literal_list(condition)
                     single_range = NominalRange(
                         [val_dict[literal] for literal in val_dict.keys() if not literal in literal_list])
-                    if self.null_values[attribute_index] in single_range.possible_values:
-                        single_range.possible_values.remove(self.null_values[attribute_index])
+                    if self.rspn.null_values[attribute_index] in single_range.possible_values:
+                        single_range.possible_values.remove(self.rspn.null_values[attribute_index])
                     if all([single_range is None for single_range in ranges[:, attribute_index]]):
                         ranges[:, attribute_index] = single_range
                     else:
@@ -533,7 +558,7 @@ class AQPSPN(CombineSPN, RSPN):
                             ranges[i, attribute_index] = NominalRange(list(
                                 set(nominal_range.possible_values).intersection(single_range.possible_values)))
 
-            elif self.meta_types[attribute_index] == MetaType.REAL:
+            elif self.rspn.meta_types[attribute_index] == MetaType.REAL:
                 if '<=' in condition:
                     _, literal = condition.split('<=', 1)
                     literal = float(literal.strip())
@@ -589,7 +614,7 @@ class AQPSPN(CombineSPN, RSPN):
                 if column not in self.column_names:
                     continue
                 attribute_index = self.column_names.index(column)
-                if self.meta_types[attribute_index] == MetaType.DISCRETE:
+                if self.rspn.meta_types[attribute_index] == MetaType.DISCRETE:
                     for idx in range(len(ranges)):
                         literal = group_by_tuples[idx][matching_group_by_idx]
                         if not isinstance(literal, list):
@@ -602,7 +627,7 @@ class AQPSPN(CombineSPN, RSPN):
                                 literal)
                             ranges[idx, attribute_index] = NominalRange(list(updated_possible_values))
 
-                elif self.meta_types[attribute_index] == MetaType.REAL:
+                elif self.rspn.meta_types[attribute_index] == MetaType.REAL:
                     for idx in range(len(ranges)):
                         literal = group_by_tuples[idx][matching_group_by_idx]
                         assert not isinstance(literal, list)

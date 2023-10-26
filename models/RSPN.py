@@ -71,8 +71,7 @@ class RSPN(TrainDBInferenceModel):
         :return: None. a learned model(SPNEnsemble object) is saved in the self.spn_ensemble
         """
         self.logger.info(f"Preparing training data")
-        # 1. collect table info (model_columns, categorical_columns, table_size)
-        # TODO 
+        # 1. collect table info (model_columns, categorical_columns, table_size) # TODO 
         columns, categoricals = self.get_columns(real_data, table_metadata) # see, models/TrainDBBaseModel.py
         real_data = real_data[columns]
         self.columns = columns
@@ -106,6 +105,8 @@ class RSPN(TrainDBInferenceModel):
 
         # 6. wrap up. save the learned model and the schema in the corresponding fields.
         self.schema = schema
+        # the following two lines cannot be combined (e.g., spn = SPNEnsemble(schema).add_spn(aqp_spn))
+        # because add_spn uses append() which returns None. 
         self.spn_ensemble = SPNEnsemble(schema)
         self.spn_ensemble.add_spn(aqp_spn)
 
