@@ -95,7 +95,7 @@ class AQPSPN(CombineSPN, RSPN):
                    max_sampling_threshold_rows=max_sampling_threshold_rows,
                    no_compression_scopes=no_compression_scopes)
 
-    def _find_scopes_for_variables_indicating_not_null_column():
+    def _find_scopes_for_variables_indicating_not_null_column(self):
         no_compression_scopes = None
         if self.column_names is not None:
             no_compression_scopes = []

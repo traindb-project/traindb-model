@@ -183,7 +183,7 @@ class RSPN(TrainDBInferenceModel):
         '''
         return hparams
 
-    def setup_a_logger(log_dir, log_level):    
+    def setup_a_logger(self, log_dir, log_level):    
         os.makedirs(log_dir, exist_ok=True)
         logging.basicConfig(
             format="%(asctime)s [%(levelname)-5.5s]  %(message)s", # [%(threadName)-12.12s]
@@ -285,7 +285,7 @@ class RSPN(TrainDBInferenceModel):
 
         return table_meta_data, table_data, relevant_attributes
 
-    def add_multiplier_fields(table, table_obj, table_data, table_meta_data, 
+    def add_multiplier_fields(self, table, table_obj, table_data, table_meta_data, 
                               relevant_attributes, schema_graph, csv_seperator):
         """
         Add multiplier fields
