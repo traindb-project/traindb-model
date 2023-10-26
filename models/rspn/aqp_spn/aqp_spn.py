@@ -20,6 +20,7 @@ class AQPSPN(CombineSPN, RSPN):
     """
     Top-level learner. 
     It learns from scratch(learn()) or update the existing one (add_dataset())
+    NOTE modified multi-inheritance to compositon
     """
 
     def __init__(self, meta_types, null_values, full_join_size, schema_graph, 
@@ -43,11 +44,22 @@ class AQPSPN(CombineSPN, RSPN):
         self.rspn = RSPN(meta_types, null_values, full_sample_size, 
                          column_names=column_names, 
                          table_meta_data=table_meta_data)
+        # public members
+        # TODO find moore public fields and methods
+        self.full_join_size =self.cspn.full_join_size
+        self.schema_graph = self.cspn.schema_graph
+        self.relationship_set = self.cspn.relationship_set
+        self.table_set = self.cspn.table_set 
+
+        self.full_sample_size = self.rspn.full_sample_size
+        self.table_meta_data = self.rspn.table_meta_data
+        self.column_names = self.rspn.column_names
+
         """
         # from CombineSPN
         self.cspn.full_join_size
         self.cspn.schema_graph
-        self.cspn.relationship_set # not being used (since it comes as None from train()/RSPN.py)
+        self.cspn.relationship_set
         self.cspn.table_set
 
         self.cspn.relevant_conditions
@@ -63,15 +75,15 @@ class AQPSPN(CombineSPN, RSPN):
         self.rspn.table_meta_data
         self.rspn.mspn
         self.rspn.ds_context
-        self.rspn.use_generated_code # not being used
-        self.rspn.learning_time      # not being used
-        self.rspn.rdc_threshold           # not being used here (updated after RSPN.learn())
-        self.rspn.min_instance_slice      # not being used here (updated after RSPN.learn())
+        self.rspn.use_generated_code
+        self.rspn.learning_time
+        self.rspn.rdc_threshold
+        self.rspn.min_instance_slice
 
         self.rspn.learn
 
         self.rspn._add_null_values_to_ranges
-        self.rspn._probability                               # not being used here
+        self.rspn._probability
         self.rspn._augment_not_null_conditions
         self.rspn._indicator_expectation
         self.rspn._indicator_expectation_with_std
@@ -91,7 +103,7 @@ class AQPSPN(CombineSPN, RSPN):
         no_compression_scopes = self._find_scopes_for_variables_indicating_not_null_column()
 
         #RSPN.learn(self, train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
-        self.rspn.learn(self, train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
+        self.rspn.learn(train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
                    max_sampling_threshold_cols=max_sampling_threshold_cols,
                    max_sampling_threshold_rows=max_sampling_threshold_rows,
                    no_compression_scopes=no_compression_scopes)
