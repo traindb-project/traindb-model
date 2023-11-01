@@ -11,7 +11,6 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 """
-
 from TrainDBBaseModel import TrainDBModel, TrainDBInferenceModel
 from rspn.ensemble_compilation.spn_ensemble import SPNEnsemble, read_ensemble
 from rspn.ensemble_compilation.graph_representation import SchemaGraph, Table
@@ -27,6 +26,11 @@ import logging
 import time
 
 class RSPN(TrainDBInferenceModel):
+    '''
+    NOTE References
+       - DeepDB_Home = https://github.com/DataManagementLab/deepdb-public/
+       - TrainDB_ML = https://github.com/kihyuk-nam/traindb-ml/
+    '''
 
     def __init__(self,
                  strategy='single',
@@ -41,14 +45,15 @@ class RSPN(TrainDBInferenceModel):
                  log_dir='test_rspn_logs',
                  log_level='debug'):
         '''
-        The arguments except for rdc_threshold and log_level are not being used in this class. TODO clean up
+        only rdc_threshold and log_level are being used in this class. 
+        TODO clean up
         '''
         self.columns = [] # TODO
         self.schema = None
         self.spn_ensemble = None
         self.logger = self.setup_a_logger(log_dir, log_level) # log_dir will be created under the current dir
 
-        # fields from deepdb, see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py
+        # fields from DeepDB_Home/maqp.py
         self.rdc_threshold = rdc_threshold
         # TODO the following fields are not being used here. clean up unnecessary ones
         self.strategy = strategy
@@ -61,51 +66,53 @@ class RSPN(TrainDBInferenceModel):
 
     def train(self, real_data, table_metadata):
         """
-        train a model real_data(.csv) and table_metadata(.json)
-        TODO extend it for multi-table (currently it only takes a single table), it should be a 'for table in tables'
-        see, https://github.com/kihyuk-nam/traindb-ml/blob/main/data/preparation/prepare_single_tables.py, 
-             https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/prepare_single_tables.py
+        train a single table model from real_data(.csv) and table_metadata(.json)
+        TODO create a multi-table version of train()
+        see, TrainDB-ML/data/preparation/prepare_single_tables.py, 
+             DeepDB_Home/data_preparation/prepare_single_tables.py
         
         :param real_data: a Pandas DataFrame of training_data(.csv)
         :param table_metadata: a deserialized json object of metadata.json
         :return: None. a learned model(SPNEnsemble object) is saved in the self.spn_ensemble
         """
-        self.logger.info(f"Preparing training data")
+        self.logger.info(f"Train an spn for {table_metadata['table']} table")
         # 1. collect table info (model_columns, categorical_columns, table_size) # TODO 
         columns, categoricals = self.get_columns(real_data, table_metadata) # see, models/TrainDBBaseModel.py
         real_data = real_data[columns]
         self.columns = columns
         table_size = len(real_data) # TODO cf. deepdb's sampling for huge training datasets
-        # cf. https://github.com/DataManagementLab/deepdb-public/blob/master/data_preparation/join_data_preparation.py#L239,275,330
-        self.logger.debug(f"- table size: {table_size}, columns: {columns}, categorical columns: {categoricals}")
+        # cf. DeepDB_Home/data_preparation/join_data_preparation.py#L239,275,330
+        self.logger.debug(f"- table size: {table_size}, columns: {columns}, categorical: {categoricals}")
 
         # 2. prepare schema object
-        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/maqp.py#L114
-        # cf. gen_instacart_schema() in https://github.com/kihyuk-nam/traindb-ml/blob/main/data/schemas/instacart.py
-        #     which is a variant of https://github.com/DataManagementLab/deepdb-public/tree/master/schemas/
+        # see, DeepDB_Home/maqp.py#L114
+        # cf. gen_instacart_schema() in TrainDB_ML/data/schemas/instacart.py
         schema = SchemaGraph() # ensemble_compilation/graph_representation.py#L76        
         schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
 
         # 3. prepare rspn_table_metadata, table_set, and update real_data
-        rspn_table_metadata, table_set, real_data = self.prepare_for_training(schema, real_data, table_metadata, columns)
+        rspn_table_metadata, table_set, real_data = self.prepare_for_training(schema, real_data, 
+                                                                              table_metadata, columns)
         self.logger.debug(f"- table set: {table_set}")
         self.logger.debug(f"- real_data.columns/rspn_columns: {real_data.columns.values.tolist()}")
 
         # 4. join data preparation : meta_types, null_values, full_join_size, full_sample_size
-        meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(columns, categoricals, table_size)
+        meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(columns, 
+                                                                                               categoricals, 
+                                                                                               table_size)
 
         self.logger.info(f"Start learning")
         # 5. start training
-        # see, https://github.com/DataManagementLab/deepdb-public/blob/master/ensemble_creation/naive.py
-        # AQPSQPN(CombinedSPN, RSPN): https://github.com/DataManagementLab/deepdb-public/blob/master/aqp_spn/aqp_spn.py#L19
+        # see, DeepDB_Home/ensemble_creation/naive.py, DeepDB_Home/aqp_spn/aqp_spn.py#L19
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
-                         table_set=table_set, column_names=real_data.columns.values.tolist(), table_meta_data=rspn_table_metadata)
+                         table_set=table_set, column_names=real_data.columns.values.tolist(), 
+                         table_meta_data=rspn_table_metadata)
         # TODO min_instance_slice = RATIO_MIN_INSTANCE_SLICE * min(sample_size, len(df_samples))
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
         # 6. wrap up. save the learned model and the schema in the corresponding fields.
         self.schema = schema
-        # the following two lines cannot be combined (e.g., spn = SPNEnsemble(schema).add_spn(aqp_spn))
+        # the following two lines cannot be combined as 'spn = SPNEnsemble(schema).add_spn(aqp_spn)'
         # because add_spn uses append() which returns None. 
         self.spn_ensemble = SPNEnsemble(schema)
         self.spn_ensemble.add_spn(aqp_spn)
