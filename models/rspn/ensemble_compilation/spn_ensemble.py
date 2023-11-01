@@ -696,32 +696,6 @@ class SPNEnsemble:
 
         return group_bys_scopes, result_tuples, result_tuples_translated
 
-    # def predict(self, conditions, regression_column):
-    #     """
-    #     Conditions
-    #     :param conditions: dictionary of table, tuple condition pairs
-    #     :param feature:
-    #     :return:
-    #     """
-    #
-    #     max_where_conditions = -1
-    #     prediction_spn = None
-    #
-    #     for spn in self.spns:
-    #         # if spn contains all features consider it a candidate
-    #         if regression_column in spn.column_names:
-    #
-    #             where_conditions = [condition for condition in conditions if condition[0] in spn.table_set]
-    #
-    #             if len(where_conditions) > max_where_conditions:
-    #                 prediction_spn = spn
-    #                 max_where_conditions = len(where_conditions)
-    #
-    #     assert prediction_spn is not None, "Did not find SPN offering this feature"
-    #
-    #     ranges = prediction_spn._parse_conditions(conditions)
-    #
-    #     return prediction_spn.predict(ranges, regression_column)
 
     def evaluate_query(self, query, rdc_spn_selection=False, pairwise_rdc_path=None,
                        dry_run=False, merge_indicator_exp=True, max_variants=10,
