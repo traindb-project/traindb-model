@@ -605,6 +605,7 @@ class SPNEnsemble:
     def add_spn(self, spn):
         """Add an SPN to ensemble"""
         self.spns.append(spn)
+        return self
 
     def _cardinality_greedy(self, query, rdc_spn_selection=False, rdc_attribute_dict=None, dry_run=False,
                             merge_indicator_exp=True, exploit_overlapping=False, return_factor_values=False,

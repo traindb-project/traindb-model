@@ -114,8 +114,7 @@ class RSPN(TrainDBInferenceModel):
         self.schema = schema
         # the following two lines cannot be combined as 'spn = SPNEnsemble(schema).add_spn(aqp_spn)'
         # because add_spn uses append() which returns None. 
-        self.spn_ensemble = SPNEnsemble(schema)
-        self.spn_ensemble.add_spn(aqp_spn)
+        self.spn_ensemble = SPNEnsemble(schema).add_spn(aqp_spn)
 
     def save(self, output_path):
         """
