@@ -9,6 +9,8 @@ from spn.structure.StatisticalTypes import MetaType
 from rspn.rspn.structure.leaves import IdentityNumericLeaf, Categorical
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 MAX_UNIQUE_LEAF_VALUES = 10000
 
 
@@ -129,6 +131,7 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
     if isinstance(cols, str):
 
         if cols == "rdc":
+            logger.debug(f"split columns by rdc")
             split_cols = get_split_cols_RDC_py(max_sampling_threshold_cols=max_sampling_threshold_cols,
                                                threshold=threshold,
                                                rand_gen=rand_gen, ohe=ohe, n_jobs=n_jobs)
@@ -144,6 +147,7 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
         if rows == "rdc":
             split_rows = get_split_rows_RDC_py(rand_gen=rand_gen, ohe=ohe, n_jobs=n_jobs)
         elif rows == "kmeans":
+            logger.debug(f"split rows by kmeans")
             split_rows = get_split_rows_KMeans(max_sampling_threshold_rows=max_sampling_threshold_rows)
         elif rows == "tsne":
             split_rows = get_split_rows_TSNE()
