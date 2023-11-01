@@ -28,7 +28,6 @@ import time
 logging.basicConfig(
     format="%(asctime)s [%(levelname)-5.5s]  %(message)s", # [%(threadName)-12.12s]
     handlers=[
-        logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
         logging.StreamHandler()
     ])
 logger = logging.getLogger(__name__)
@@ -52,8 +51,7 @@ class RSPN(TrainDBInferenceModel):
                  incremental_condition='',
                  epochs=0):
         '''
-        only rdc_threshold and log_level are being used in this class. 
-        TODO clean up
+        TODO clean up - only rdc_threshold are being used in this class. 
         '''
         self.columns = [] # TODO
         self.schema = None
@@ -179,7 +177,6 @@ class RSPN(TrainDBInferenceModel):
     def list_hyperparameters():
         hparams = []
         hparams.append(TrainDBModel.createHyperparameter('rdc_threshold', 'float', '0.3', 'threshold for determining correlation'))
-        hparams.append(TrainDBModel.createHyperparameter('log_level', 'str', 'info', 'level of log message'))
         ''' TODO clean up args: currently the following arguments are not being used.
         hparams.append(TrainDBModel.createHyperparameter('strategy', 'str', 'single', 'type of RSPN ensemble'))
         hparams.append(TrainDBModel.createHyperparameter('sample_per_spn', 'int', '10000000', 'the number of samples per spn'))
