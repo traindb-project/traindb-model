@@ -696,7 +696,6 @@ class SPNEnsemble:
 
         return group_bys_scopes, result_tuples, result_tuples_translated
 
-
     def evaluate_query(self, query, rdc_spn_selection=False, pairwise_rdc_path=None,
                        dry_run=False, merge_indicator_exp=True, max_variants=10,
                        exploit_overlapping=False, debug=False, display_intermediate_results=False,

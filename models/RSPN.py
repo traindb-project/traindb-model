@@ -25,6 +25,15 @@ import torch
 import logging
 import time
 
+logging.basicConfig(
+    format="%(asctime)s [%(levelname)-5.5s]  %(message)s", # [%(threadName)-12.12s]
+    handlers=[
+        logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
+        logging.StreamHandler()
+    ])
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 class RSPN(TrainDBInferenceModel):
     '''
     NOTE References
@@ -41,9 +50,7 @@ class RSPN(TrainDBInferenceModel):
                  post_sampling_factor=30,
                  incremental_learning_rate=0,
                  incremental_condition='',
-                 epochs=0,
-                 log_dir='test_rspn_logs',
-                 log_level='debug'):
+                 epochs=0):
         '''
         only rdc_threshold and log_level are being used in this class. 
         TODO clean up
@@ -51,7 +58,6 @@ class RSPN(TrainDBInferenceModel):
         self.columns = [] # TODO
         self.schema = None
         self.spn_ensemble = None
-        self.logger = self.setup_a_logger(log_dir, log_level) # log_dir will be created under the current dir
 
         # fields from DeepDB_Home/maqp.py
         self.rdc_threshold = rdc_threshold
@@ -67,7 +73,7 @@ class RSPN(TrainDBInferenceModel):
     def train(self, real_data, table_metadata):
         """
         train a single table model from real_data(.csv) and table_metadata(.json)
-        TODO create a multi-table version of train()
+        TODO create a multi-table version of train() - make it for loop
         see, TrainDB-ML/data/preparation/prepare_single_tables.py, 
              DeepDB_Home/data_preparation/prepare_single_tables.py
         
@@ -75,34 +81,33 @@ class RSPN(TrainDBInferenceModel):
         :param table_metadata: a deserialized json object of metadata.json
         :return: None. a learned model(SPNEnsemble object) is saved in the self.spn_ensemble
         """
-        self.logger.info(f"Train an spn for {table_metadata['table']} table")
-        # 1. collect table info (model_columns, categorical_columns, table_size) # TODO 
-        columns, categoricals = self.get_columns(real_data, table_metadata) # see, models/TrainDBBaseModel.py
+        logger.info(f"Train an spn for {table_metadata['table']} table")
+
+        # 1. collect table info (model_columns, categorical_columns, table_size)
+        # TODO cf. deepdb's sampling for huge training datasets
+        columns, categoricals = self.get_columns(real_data, table_metadata)
         real_data = real_data[columns]
         self.columns = columns
-        table_size = len(real_data) # TODO cf. deepdb's sampling for huge training datasets
-        # cf. DeepDB_Home/data_preparation/join_data_preparation.py#L239,275,330
-        self.logger.debug(f"- table size: {table_size}, columns: {columns}, categorical: {categoricals}")
+        table_size = len(real_data)
+        # cf.DeepDB_Home/data_preparation/join_data_preparation.py#L239,275,330
+        logger.debug(f"- size: {table_size}")
+        logger.debug(f"- columns: {columns}, categorical: {categoricals}")
 
-        # 2. prepare schema object
-        # see, DeepDB_Home/maqp.py#L114
-        # cf. gen_instacart_schema() in TrainDB_ML/data/schemas/instacart.py
-        schema = SchemaGraph() # ensemble_compilation/graph_representation.py#L76        
-        schema.add_table(Table(table_metadata['table'], attributes=columns, table_size=table_size))
+        # 2. prepare schema object  see, DeepDB_Home/maqp.py#L114, 
+        # cf. gen_instacart_schema() (TrainDB_ML/data/schemas/instacart.py)
+        schema = SchemaGraph() # graph_representation.py#L76
+        schema.add_table(Table(table_metadata['table'], attributes=columns, 
+                               table_size=table_size))
 
         # 3. prepare rspn_table_metadata, table_set, and update real_data
-        rspn_table_metadata, table_set, real_data = self.prepare_for_training(schema, real_data, 
-                                                                              table_metadata, columns)
-        self.logger.debug(f"- table set: {table_set}")
-        self.logger.debug(f"- real_data.columns/rspn_columns: {real_data.columns.values.tolist()}")
+        rspn_table_metadata, table_set, real_data = self.prepare_for_training(
+            schema, real_data, table_metadata, columns)
 
-        # 4. join data preparation : meta_types, null_values, full_join_size, full_sample_size
-        meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(columns, 
-                                                                                               categoricals, 
-                                                                                               table_size)
+        # 4. prepare join data 
+        meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(
+            columns, categoricals, table_size)
 
-        self.logger.info(f"Start learning")
-        # 5. start training
+        # 5. start training - AQPSPN.learn --> RSPN.learn --> learn_mspn --> learn_structure
         # see, DeepDB_Home/ensemble_creation/naive.py, DeepDB_Home/aqp_spn/aqp_spn.py#L19
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
                          table_set=table_set, column_names=real_data.columns.values.tolist(), 
@@ -110,10 +115,8 @@ class RSPN(TrainDBInferenceModel):
         # TODO min_instance_slice = RATIO_MIN_INSTANCE_SLICE * min(sample_size, len(df_samples))
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
-        # 6. wrap up. save the learned model and the schema in the corresponding fields.
+        # 6. wrap up. save the learned model into .pkl
         self.schema = schema
-        # the following two lines cannot be combined as 'spn = SPNEnsemble(schema).add_spn(aqp_spn)'
-        # because add_spn uses append() which returns None. 
         self.spn_ensemble = SPNEnsemble(schema).add_spn(aqp_spn)
 
     def save(self, output_path):
@@ -188,29 +191,8 @@ class RSPN(TrainDBInferenceModel):
         hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '0', 'the number of training epochs'))
         '''
         return hparams
-
-    def setup_a_logger(self, log_dir, log_level):    
-        os.makedirs(log_dir, exist_ok=True)
-        logging.basicConfig(
-            format="%(asctime)s [%(levelname)-5.5s]  %(message)s", # [%(threadName)-12.12s]
-            handlers=[
-                logging.FileHandler("test_rspn_logs/{}_{}.log".format("rspn", time.strftime("%Y%m%d-%H%M%S"))),
-                logging.StreamHandler()
-            ])
-        logger = logging.getLogger(__name__)
-        if log_level == 'debug':
-            logger.setLevel(logging.DEBUG)
-        elif log_level == 'info':
-            logger.setLevel(logging.INFO)
-        elif log_level == 'warning':
-            logger.setLevel(logging.WARNING)
-        elif log_level == 'error':
-            logger.setLevel(logging.ERROR)
-        elif log_level == 'critical':
-            logger.setLevel(logging.CRITICAL)
-
-        return logger
     
+
     def prepare_for_training(self, schema, real_data, table_metadata, columns):
         """
         Prepare for training arguments - create rspn_table_metadata, table_set and update real_data

@@ -28,7 +28,9 @@ def learn_mspn(
         cpus=-1
 ):
     """
-    Adapts normal learn_mspn to use custom identity leafs and use sampling for structure learning.
+    Adapts normal learn_mspn to use custom identity leafs 
+    and use sampling for structure learning.
+    
     :param max_sampling_threshold_rows:
     :param max_sampling_threshold_cols:
     :param data:
@@ -53,8 +55,10 @@ def learn_mspn(
     from rspn.rspn.learning.structure_learning import get_next_operation, learn_structure
 
     def l_mspn(data, ds_context, cols, rows, min_instances_slice, threshold, ohe):
-        split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols,
-                                                         rows, ohe, threshold, rand_gen, cpus)
+        split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, 
+                                                         max_sampling_threshold_cols, 
+                                                         cols, rows, ohe, threshold, 
+                                                         rand_gen, cpus)
 
         nextop = get_next_operation(min_instances_slice)
 
