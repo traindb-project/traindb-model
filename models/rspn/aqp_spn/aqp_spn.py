@@ -15,12 +15,11 @@ from rspn.rspn.updates.top_down_updates import cluster_center_update_dataset
 
 logger = logging.getLogger(__name__)
 
-
-class AQPSPN(CombineSPN, RSPN):
+# NOTE refactored: multi-inheritance --> composition
+class AQPSPN:
     """
     Top-level learner. 
     It learns from scratch(learn()) or update the existing one (add_dataset())
-    NOTE modified multi-inheritance to compositon
     """
 
     def __init__(self, meta_types, null_values, full_join_size, schema_graph, 
@@ -33,56 +32,38 @@ class AQPSPN(CombineSPN, RSPN):
             full_sample_size = full_join_size
 
         # initialize fields from CombineSPN and RSPN
-        '''
-        CombineSPN.__init__(self, full_join_size, schema_graph, relationship_list, table_set=table_set)
-        RSPN.__init__(self, meta_types, null_values, full_sample_size,
-                      column_names=column_names,
-                      table_meta_data=table_meta_data)
-        '''
+        # - from CombineSPN
         self.cspn = CombineSPN(full_join_size, schema_graph, 
-                                relationship_list, table_set=table_set)
-        self.rspn = RSPN(meta_types, null_values, full_sample_size, 
-                         column_names=column_names, 
-                         table_meta_data=table_meta_data)
-        # public members
-        # TODO find moore public fields and methods
+                               relationship_list, table_set=table_set)
         self.full_join_size =self.cspn.full_join_size
         self.schema_graph = self.cspn.schema_graph
         self.relationship_set = self.cspn.relationship_set
         self.table_set = self.cspn.table_set 
+        self.relevant_conditions = self.cspn.relevant_conditions
+        self.compute_mergeable_relationships = self.cspn.compute_mergeable_relationships
+        self.compute_multipliers = self.cspn.compute_multipliers
+        self.compute_depths = self.cspn.compute_depths
 
+        # - from RSPN
+        self.rspn = RSPN(meta_types, null_values, full_sample_size, 
+                         column_names=column_names, 
+                         table_meta_data=table_meta_data)
         self.full_sample_size = self.rspn.full_sample_size
         self.table_meta_data = self.rspn.table_meta_data
         self.column_names = self.rspn.column_names
+        self.null_values = self.rspn.null_values
+        self.use_generated_code = self.rspn.use_generated_code
+        self._add_null_values_to_ranges = self.rspn._add_null_values_to_ranges
 
+        # TODO private members?
         """
-        # from CombineSPN
-        self.cspn.full_join_size
-        self.cspn.schema_graph
-        self.cspn.relationship_set
-        self.cspn.table_set
-
-        self.cspn.relevant_conditions
-        self.cspn.comput_multipliers
-        self.cspn.compute_depths
-        self.cspn.compute_mergeable_relationships
-
-        # from RSPN
         self.rspn.meta_types
-        self.rspn.null_values
-        self.rspn.full_sample_size
-        self.rspn.rspn.column_names
-        self.rspn.table_meta_data
         self.rspn.mspn
         self.rspn.ds_context
-        self.rspn.use_generated_code
         self.rspn.learning_time
         self.rspn.rdc_threshold
         self.rspn.min_instance_slice
-
         self.rspn.learn
-
-        self.rspn._add_null_values_to_ranges
         self.rspn._probability
         self.rspn._augment_not_null_conditions
         self.rspn._indicator_expectation
@@ -95,18 +76,17 @@ class AQPSPN(CombineSPN, RSPN):
     def learn(self, train_data, rdc_threshold=0.3, min_instances_slice=1, max_sampling_threshold_cols=10000,
               max_sampling_threshold_rows=100000, bloom_filters=False):
         """
-        start learning by calling RSPN.learn which calls learn_mspn in rspn.learning.rspn_learning.py,
-        which calls learn_structure in rspn.learning.structure_learning.py
+        start learning by calling RSPN.learn (rspn/rspn.py),
+        which calls learn_mspn (rspn.learning.rspn_learning.py),
+        which calls learn_structure (rspn.learning.structure_learning.py)
         """
-
-        # find scopes for variables which indicate not null column
         no_compression_scopes = self._find_scopes_for_variables_indicating_not_null_column()
 
-        #RSPN.learn(self, train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
         self.rspn.learn(train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
-                   max_sampling_threshold_cols=max_sampling_threshold_cols,
-                   max_sampling_threshold_rows=max_sampling_threshold_rows,
-                   no_compression_scopes=no_compression_scopes)
+                        max_sampling_threshold_cols=max_sampling_threshold_cols,
+                        max_sampling_threshold_rows=max_sampling_threshold_rows,
+                        no_compression_scopes=no_compression_scopes)
+
 
     def _find_scopes_for_variables_indicating_not_null_column(self):
         no_compression_scopes = None
@@ -118,7 +98,9 @@ class AQPSPN(CombineSPN, RSPN):
                     column_name = table + '.' + attribute
                     if column_name in self.rspn.column_names:
                         no_compression_scopes.append(self.rspn.column_names.index(column_name))
-        return
+
+        return no_compression_scopes
+
 
     def learn_incremental(self, data):
         """
