@@ -6,7 +6,7 @@ import torch
 from sklearn.mixture import BayesianGaussianMixture, GaussianMixture
 from sklearn.preprocessing import KBinsDiscretizer
 
-from sdgym.constants import CATEGORICAL, CONTINUOUS, ORDINAL
+from octgan.constants import CATEGORICAL, CONTINUOUS, ORDINAL
 
 
 class Transformer:
