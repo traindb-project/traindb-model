@@ -14,8 +14,8 @@
 
 import logging
 import rdt
-from sdgym.synthesizers import TableGAN as SDGymTableGAN
-from sdgym.errors import UnsupportedDataset
+from tablegan.tablegan import TableGAN as SDGymTableGAN
+from tablegan.errors import UnsupportedDataset
 import os
 import pandas as pd
 import torch
