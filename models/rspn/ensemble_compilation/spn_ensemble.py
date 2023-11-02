@@ -222,7 +222,6 @@ def read_ensemble(ensemble_locations, build_reverse_dict=False):
                 logging.debug(f"Including SPN with table_set {spn.table_set} with sampling ratio"
                               f"({spn.full_sample_size} / {spn.full_join_size})")
                 # logging.debug(f"Stats: ({get_structure_stats(spn.mspn)})")
-                # build reverse dict.
                 if build_reverse_dict:
                     _build_reverse_spn_dict(spn)
                 ensemble.add_spn(spn)

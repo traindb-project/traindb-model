@@ -73,16 +73,19 @@ class AQPSPN:
         self.rspn._normalized_conditional_expectation
         """
 
-    def learn(self, train_data, rdc_threshold=0.3, min_instances_slice=1, max_sampling_threshold_cols=10000,
+    def learn(self, train_data, rdc_threshold=0.3, min_instances_slice=1, 
+              max_sampling_threshold_cols=10000,
               max_sampling_threshold_rows=100000, bloom_filters=False):
         """
-        start learning by calling RSPN.learn (rspn/rspn.py),
-        which calls learn_mspn (rspn.learning.rspn_learning.py),
-        which calls learn_structure (rspn.learning.structure_learning.py)
+        RSPN.learn (rspn/rspn.py) 
+        --> learn_mspn (rspn.learning.rspn_learning.py),
+        --> learn_structure (rspn.learning.structure_learning.py)
         """
         no_compression_scopes = self._find_scopes_for_variables_indicating_not_null_column()
 
-        self.rspn.learn(train_data, rdc_threshold=rdc_threshold, min_instances_slice=min_instances_slice,
+        self.rspn.learn(train_data, 
+                        rdc_threshold=rdc_threshold, 
+                        min_instances_slice=min_instances_slice,
                         max_sampling_threshold_cols=max_sampling_threshold_cols,
                         max_sampling_threshold_rows=max_sampling_threshold_rows,
                         no_compression_scopes=no_compression_scopes)

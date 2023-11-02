@@ -81,72 +81,29 @@ class RSPN(TrainDBInferenceModel):
         """
         logger.info(f"Train an spn for {table_metadata['table']} table")
 
-        # 1. collect table info (model_columns, categorical_columns, table_size)
+        # 0. setup variables - columns, categoricals, table_size, schema
         # TODO cf. deepdb's sampling for huge training datasets
         columns, categoricals = self.get_columns(real_data, table_metadata)
         real_data = real_data[columns]
         self.columns = columns
         table_size = len(real_data)
-        # cf.DeepDB_Home/data_preparation/join_data_preparation.py#L239,275,330
-        logger.debug(f"- size: {table_size}")
-        logger.debug(f"- columns: {columns}, categorical: {categoricals}")
 
-        # 2. prepare schema object  see, DeepDB_Home/maqp.py#L114, 
-        # cf. gen_instacart_schema() (TrainDB_ML/data/schemas/instacart.py)
         schema = SchemaGraph() # graph_representation.py#L76
         schema.add_table(Table(table_metadata['table'], attributes=columns, 
                                table_size=table_size))
+        # cf. gen_instacart_schema() (TrainDB_ML/data/schemas/instacart.py)
 
-        # 3. prepare rspn_table_metadata, table_set, and update real_data
-        #rspn_table_metadata, table_set, real_data = self.prepare_for_training(
-        #    schema, real_data, table_metadata, columns)
-
-        # 3. setup table-related variables
-        rspn_table_metadata, table_set = self._init_table_info(schema)
-        table_obj = schema.table_dictionary[table_metadata['table']]
-        table_name = table_obj.table_name
-
-        # 4. update real_data.columns. e.g., [reordered] --> [orders.reordered]
-        real_data.columns = [table_name + '.' + c for c in columns] 
+        logger.debug(f"- size: {table_size}")
+        logger.debug(f"- columns: {columns}, categorical: {categoricals}")
         
-        # 5. setup relevant_attributes from schema
-        relevant_attributes = [x for x in table_obj.attributes \
-                if x not in table_obj.irrelevant_attributes]
+        # 1. prepare table data
+        table_set, real_data, rspn_table_metadata =  self.generate_table_info(schema, real_data, columns, categoricals)
 
-        # 6. remove columns having functional dependencies
-        rspn_table_metadata, real_data, relevant_attributes = \
-                self.manage_functional_dependencies(table_name, table_obj, real_data, 
-                                                    rspn_table_metadata, relevant_attributes)
-
-        # 7. TODO prepare for join
-        # rspn_table_metadata, real_data, relevant_attributes = \
-        #     self.add_multiplier_fields(table_name, table_obj, real_data, rspn_table_metadata, 
-        #                                relevant_attributes, schema, csv_seperator=',')
-        #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L82
-        #     see, TrainDB_ML/data/preparation/prepare_single_tables.py#L53
-
-        # 8. handle fk_references
-        #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L126
-        rspn_table_metadata = self.populate_fk_references_in_metadata(
-                rspn_table_metadata, schema, table_name, real_data)
-        
-        # 9. handle missing values (fill in with mean+0.0001
-        #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L137
-        real_data, rspn_table_metadata, relevant_attributes = \
-            self.handle_missing_values(table_name, real_data, 
-                                       rspn_table_metadata, 
-                                       relevant_attributes, 10000)
-        logger.debug(f"rspn_table_metadata:{rspn_table_metadata}")
-        logger.debug(f"table_set:{table_set}")
-        logger.debug(f"table_obj:{table_obj}")
-        logger.debug(f"table_name:{table_name}")
-        logger.debug(f"relevant_attributes:{relevant_attributes}")
-
-        # 10. prepare join data 
+        # 2. prepare join data 
         meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(
             columns, categoricals, table_size)
 
-        # 11. start training - AQPSPN.learn --> RSPN.learn --> learn_mspn --> learn_structure
+        # 3. start training - AQPSPN.learn --> RSPN.learn --> learn_mspn --> learn_structure
         # see, DeepDB_Home/ensemble_creation/naive.py, DeepDB_Home/aqp_spn/aqp_spn.py#L19
         aqp_spn = AQPSPN(meta_types, null_values, full_join_size, schema, None, full_sample_size,
                          table_set=table_set, column_names=real_data.columns.values.tolist(), 
@@ -154,7 +111,7 @@ class RSPN(TrainDBInferenceModel):
         # TODO min_instance_slice = RATIO_MIN_INSTANCE_SLICE * min(sample_size, len(df_samples))
         aqp_spn.learn(real_data.to_numpy(), rdc_threshold=self.rdc_threshold)
 
-        # 12. wrap up. save the learned model into .pkl
+        # 4. wrap up. save the learned model into .pkl
         self.schema = schema
         self.spn_ensemble = SPNEnsemble(schema).add_spn(aqp_spn)
 
@@ -230,6 +187,48 @@ class RSPN(TrainDBInferenceModel):
         '''
         return hparams
     
+    def generate_table_info(self, schema, real_data, columns, categoricals):
+        # 1. setup table-related variables
+        rspn_table_metadata, table_set = self._init_table_info(schema)
+        table_obj = schema.table_dictionary[table_metadata['table']]
+        table_name = table_obj.table_name
+        logger.debug(f"table_set:{table_set}")
+        logger.debug(f"table_obj:{table_obj}")
+
+        # 2. update real_data.columns. e.g., [reordered] --> [orders.reordered]
+        real_data.columns = [table_name + '.' + c for c in columns] 
+        
+        # 3. setup relevant_attributes from schema
+        relevant_attributes = [x for x in table_obj.attributes \
+                if x not in table_obj.irrelevant_attributes]
+
+        # 4. remove columns having functional dependencies
+        rspn_table_metadata, real_data, relevant_attributes = \
+                self.manage_functional_dependencies(table_name, table_obj, real_data, 
+                                                    rspn_table_metadata, relevant_attributes)
+
+        # 5. TODO prepare for join
+        # rspn_table_metadata, real_data, relevant_attributes = \
+        #     self.add_multiplier_fields(table_name, table_obj, real_data, rspn_table_metadata, 
+        #                                relevant_attributes, schema, csv_seperator=',')
+        #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L82
+        #     see, TrainDB_ML/data/preparation/prepare_single_tables.py#L53
+
+        # 6. handle fk_references
+        #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L126
+        rspn_table_metadata = self.populate_fk_references_in_metadata(
+                rspn_table_metadata, schema, table_name, real_data)
+        
+        # 7. handle missing values (fill in with mean+0.0001
+        #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L137
+        real_data, rspn_table_metadata, relevant_attributes = \
+            self.handle_missing_values(table_name, real_data, 
+                                       rspn_table_metadata, 
+                                       relevant_attributes, 10000)
+        logger.debug(f"rspn_table_metadata:{rspn_table_metadata}")
+
+        return table_set, real_data, rspn_table_metadata
+
     def _init_table_info(self, schema):
         ''' Initialize rspn_table_metadata, table_set '''
         rspn_table_metadata = dict()
@@ -336,10 +335,13 @@ class RSPN(TrainDBInferenceModel):
         return rspn_table_metadata
         
     def find_relationships(self, schema_graph, table, incoming=True):
+        '''
+        Find FK-PK relationships from schema (SchemaGraph)
+        :param schema_graph: a SchemaGraph object from metadata(.json)
+        '''
         relationships = []
 
         for relationship_obj in schema_graph.relationships:
-
             if relationship_obj.end == table and incoming:
                 relationships.append(relationship_obj)
             if relationship_obj.start == table and not incoming:
@@ -433,6 +435,9 @@ class RSPN(TrainDBInferenceModel):
         meta_data['length'] = len(real_data) * 1 / table_sample_rate
 
         assert not real_data.isna().any().any(), "Still contains null values"
+
+        logger.debug(f"table_name:{table_name}")
+        logger.debug(f"relevant_attributes:{relevant_attributes}")
 
         return real_data, meta_data, relevant_attributes
 
