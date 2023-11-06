@@ -31,7 +31,9 @@ class CTGAN(TrainDBSynopsisModel):
         self.columns, _ = self.get_columns(real_data, table_metadata)
 
         LOGGER.info("Training %s", self.__class__.__name__)
-        self.model = sdv.tabular.CTGAN(table_metadata=table_metadata, **self.model_kwargs)
+        sdv_metadata = sdv.metadata.single_table.SingleTableMetadata.load_from_dict(
+                sdv.metadata.metadata_upgrader.convert_metadata(table_metadata))
+        self.model = sdv.single_table.CTGANSynthesizer(metadata=sdv_metadata, **self.model_kwargs)
         self.model.fit(real_data)
 
     def save(self, output_path):
@@ -41,7 +43,7 @@ class CTGAN(TrainDBSynopsisModel):
         }, os.path.join(output_path, 'model_info.pth'))
 
     def load(self, input_path):
-        self.model = sdv.tabular.CTGAN.load(os.path.join(input_path, 'model.pkl'))
+        self.model = sdv.single_table.CTGANSynthesizer.load(os.path.join(input_path, 'model.pkl'))
         saved_model_info = torch.load(os.path.join(input_path, 'model_info.pth'))
         self.columns = saved_model_info['columns']
 

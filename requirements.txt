@@ -49,6 +49,7 @@ patsy==0.5.3
 Pillow==10.0.1
 pip-autoremove==0.10.0
 pkgutil_resolve_name==1.3.10
+plotly==5.18.0
 pluggy==1.3.0
 pomegranate==0.14.9
 psutil==5.9.5
@@ -65,14 +66,13 @@ python-multipart==0.0.6
 pyts==0.12.0
 pytz==2023.3.post1
 PyYAML==6.0.1
-rdt==0.6.3
+rdt==1.7.0
 requests==2.31.0
 s3transfer==0.6.2
 scikit-learn==1.3.1
 scipy==1.10.1
-sdgym==0.5.0
-sdmetrics==0.4.1
-sdv==0.14.1
+sdmetrics==0.12.1
+sdv==1.5.0
 setuptools-scm==7.1.0
 six==1.16.0
 sklearn==0.0.post9
@@ -86,6 +86,7 @@ starlette==0.27.0
 statsmodels==0.14.0
 sympy==1.12
 tabulate==0.8.10
+tenacity==8.2.3
 text-unidecode==1.3
 threadpoolctl==3.2.0
 tomli==2.0.1

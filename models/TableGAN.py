@@ -14,6 +14,7 @@
 
 import logging
 import rdt
+from rdt.transformers import *
 from tablegan.tablegan import TableGAN as SDGymTableGAN
 from tablegan.errors import UnsupportedDataset
 import os
@@ -32,20 +33,46 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
                  batch_size=500,
                  epochs=300):
  
-        self.ht = rdt.HyperTransformer(default_data_type_transformers={
-            'categorical': 'LabelEncodingTransformer',
-        })
+        self.ht = rdt.HyperTransformer()
         self.columns = []
 
         super().__init__(random_dim, num_channels, l2scale, batch_size, epochs)
+
+    def _get_hyper_transformer_config(self, real_data, table_metadata):
+        sdtypes = {}
+        transformers = {}
+
+        fields_meta = table_metadata['fields']
+
+        for column in real_data.columns:
+            field_meta = fields_meta[column]
+            field_type = field_meta['type']
+            if field_type == 'id':
+                continue
+
+            if field_type == 'categorical':
+                sdtypes[column] = 'categorical'
+                transformers[column] = OneHotEncoder()
+            elif field_type == 'numerical':
+                sdtypes[column] = 'numerical'
+                transformers[column] = FloatFormatter()
+            elif field_type == 'datetime':
+                sdtypes[column] = 'datetime'
+                transformers[column] = UnixTimestampEncoder()
+            elif field_type == 'boolean':
+                sdtypes[column] = 'boolean'
+                transformers[column] = BinaryEncoder()
+
+        return {'sdtypes': sdtypes, 'transformers': transformers}
 
     def train(self, real_data, table_metadata):
         columns, categoricals = self.get_columns(real_data, table_metadata)
         real_data = real_data[columns]
         self.columns = columns
 
-        self.ht.fit(real_data.iloc[:, categoricals])
-        model_data = self.ht.transform(real_data)
+        ht_config = self._get_hyper_transformer_config(real_data, table_metadata)
+        self.ht.set_config(ht_config)
+        model_data = self.ht.fit_transform(real_data)
 
         supported = set(model_data.select_dtypes(('number', 'bool')).columns)
         unsupported = set(model_data.columns) - supported
