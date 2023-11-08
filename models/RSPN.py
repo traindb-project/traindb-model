@@ -97,7 +97,7 @@ class RSPN(TrainDBInferenceModel):
         logger.debug(f"- columns: {columns}, categorical: {categoricals}")
         
         # 1. prepare table data
-        table_set, real_data, rspn_table_metadata =  self.generate_table_info(schema, real_data, columns, categoricals)
+        table_set, real_data, rspn_table_metadata =  self.generate_table_info(schema, real_data, table_metadata, columns, categoricals)
 
         # 2. prepare join data 
         meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(
@@ -187,7 +187,7 @@ class RSPN(TrainDBInferenceModel):
         '''
         return hparams
     
-    def generate_table_info(self, schema, real_data, columns, categoricals):
+    def generate_table_info(self, schema, real_data, table_metadata, columns, categoricals):
         # 1. setup table-related variables
         rspn_table_metadata, table_set = self._init_table_info(schema)
         table_obj = schema.table_dictionary[table_metadata['table']]
