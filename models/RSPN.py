@@ -97,7 +97,8 @@ class RSPN(TrainDBInferenceModel):
         logger.debug(f"- columns: {columns}, categorical: {categoricals}")
         
         # 1. prepare table data
-        table_set, real_data, rspn_table_metadata =  self.generate_table_info(schema, real_data, table_metadata, columns, categoricals)
+        table_set, real_data, rspn_table_metadata = \
+            self.generate_table_info(schema, real_data, table_metadata, columns, categoricals)
 
         # 2. prepare join data 
         meta_types, null_values, full_join_size, full_sample_size = self.generate_join_samples(
@@ -221,7 +222,7 @@ class RSPN(TrainDBInferenceModel):
         
         # 7. handle missing values (fill in with mean+0.0001
         #     see, DeepDB_Home/data_preparation/prepare_single_tables.py#L137
-        real_data, rspn_table_metadata, relevant_attributes = \
+        real_data, rspn_table_metadata, relevant_attributes, del_cat_attributes = \
             self.handle_missing_values(table_name, real_data, 
                                        rspn_table_metadata, 
                                        relevant_attributes, 10000)
@@ -421,6 +422,8 @@ class RSPN(TrainDBInferenceModel):
                     if contains_nan:
                         assert (real_data[attribute] == unique_null_val).any(), "Null value cannot be found"
 
+        # TODO Find out why the following lines create an error #4
+        """
         # remove categorical columns with too many entries from relevant tables and dataframe
         relevant_attributes = [x for x in relevant_attributes if x not in del_cat_attributes]
         logger.info("Relevant attributes for table {} are {}".format(table_name, relevant_attributes))
@@ -438,8 +441,9 @@ class RSPN(TrainDBInferenceModel):
 
         logger.debug(f"table_name:{table_name}")
         logger.debug(f"relevant_attributes:{relevant_attributes}")
+        """
 
-        return real_data, meta_data, relevant_attributes
+        return real_data, meta_data, relevant_attributes, del_cat_attributes
 
     def generate_join_samples(self, columns, categoricals, table_size):
         """
