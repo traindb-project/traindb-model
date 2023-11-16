@@ -115,7 +115,9 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
     def synopsis(self, row_count):
         LOGGER.info("Synopsis Generating %s", self.__class__.__name__)
         sampled_data = self.sample(row_count)
-        sampled_data = pd.DataFrame(sampled_data, columns=self.columns)
+        # hack: concat '.value' suffix to avoid the bug in RDT 1.2.1
+        ht_columns = ['{}{}'.format(col, '.value') for col in self.columns]
+        sampled_data = pd.DataFrame(sampled_data, columns=ht_columns)
 
         synthetic_data = self.ht.reverse_transform(sampled_data)
         return synthetic_data
