@@ -12,7 +12,7 @@ cloudpickle==2.2.1
 compress-pickle==2.1.0
 contourpy==1.1.1
 copulas==0.7.0
-ctgan==0.6.0
+ctgan==0.5.2
 cycler==0.11.0
 Cython==0.29.36
 dataclasses==0.6
