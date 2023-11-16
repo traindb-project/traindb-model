@@ -52,7 +52,7 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
 
             if field_type == 'categorical':
                 sdtypes[column] = 'categorical'
-                transformers[column] = OneHotEncoder()
+                transformers[column] = LabelEncoder()
             elif field_type == 'numerical':
                 sdtypes[column] = 'numerical'
                 transformers[column] = FloatFormatter()
