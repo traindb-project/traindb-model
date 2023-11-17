@@ -209,6 +209,8 @@ if __name__ == '__main__':
                         help='IP address of the TrainDB Model Server REST API')
     parser.add_argument('--port', default='58080',
                         help='port of the TrainDB Model Server REST API')
+    parser.add_argument('--workers', type=int, default=4,
+                        help='the number of worker processes')
     parser.add_argument('--ssl_keyfile', nargs='?', default='')
     parser.add_argument('--ssl_certfile', nargs='?', default='')
 
@@ -234,10 +236,12 @@ if __name__ == '__main__':
     # prerequisite: pip install fastapi uvicorn python-multipart
     # testing: launch browser with "http://0.0.0.0:58080" then see hello message
     if len(args.ssl_keyfile) > 0 and len(args.ssl_certfile) > 0:
-        uvicorn.run(app, host=args.host, port=int(args.port),
-                    ssl_keyfile=args.ssl_keyfile, ssl_certfile=args.ssl_certfile)
+        uvicorn.run("__main__:app", host=args.host, port=int(args.port),
+                    ssl_keyfile=args.ssl_keyfile, ssl_certfile=args.ssl_certfile,
+                    workers=args.workers)
     else:
-        uvicorn.run(app, host=args.host, port=int(args.port))
+        uvicorn.run("__main__:app", host=args.host, port=int(args.port),
+                    workers=args.workers)
 
     sys.exit("Shutting down, bye bye!")
 
