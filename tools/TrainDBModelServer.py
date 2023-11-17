@@ -23,6 +23,7 @@ import signal
 import sys
 import time
 from typing import Optional
+import warnings
 import zipfile
 
 from fastapi import FastAPI, File, Form, UploadFile
@@ -34,6 +35,8 @@ import psutil
 import uvicorn
 
 from TrainDBBaseModelRunner import TrainDBModelRunner
+
+warnings.filterwarnings('ignore')
 
 app = FastAPI()
 training_processes = []
