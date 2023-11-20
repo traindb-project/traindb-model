@@ -16,7 +16,7 @@ import argparse
 import io
 import json
 import logging
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import os
 from pathlib import Path
 import signal
@@ -62,6 +62,27 @@ def train_model(modeltype_class, model_name, jdbc_driver_class,
 
     Path(model_path).mkdir(parents=True, exist_ok=True)
     model.save(model_path)
+
+def analyze_synopsis(jdbc_driver_class, db_url, db_user, db_pwd,
+                     select_original_data_sql, select_synopsis_data_sql, metadata,
+                     return_queue):
+    jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
+    conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
+    curs_orig = conn.cursor()
+    curs_orig.execute(select_original_data_sql)
+    header_orig = [desc[0] for desc in curs_orig.description]
+    original_data = pd.DataFrame(curs_orig.fetchall(), columns=header_orig)
+
+    curs_syn = conn.cursor()
+    curs_syn.execute(select_synopsis_data_sql)
+    header_syn = [desc[0] for desc in curs_syn.description]
+    synopsis_data = pd.DataFrame(curs_syn.fetchall(), columns=header_syn)
+
+    runner = TrainDBModelRunner()
+    quality_report = runner._evaluate(original_data, synopsis_data, metadata)
+    column_shapes = quality_report.get_details(property_name='Column Shapes')
+
+    return_queue.put(column_shapes.to_json(orient='records'))
 
 def get_modeltype_path(modeltype_name: str):
     return str(modeltype_dir.joinpath(modeltype_name+'.py'))
@@ -204,6 +225,27 @@ def status():
             status = "finished"
         res.append({"model": proc["model"], "status": status})
     return res
+
+@app.post("/synopsis/analyze")
+async def analyze(
+        jdbc_driver_class: str = Form(...),
+        db_url: str = Form(...),
+        db_user: str = Form(...),
+        db_pwd: str = Form(...),
+        select_original_data_sql: str = Form(...),
+        select_synopsis_data_sql: str = Form(...),
+        metadata_file: UploadFile = File(...)):
+
+    metadata = json.loads(metadata_file.file.read())
+    return_queue = Queue()
+    p = Process(target=analyze_synopsis,
+                args=(jdbc_driver_class, db_url, db_user, db_pwd,
+                      select_original_data_sql, select_synopsis_data_sql, metadata,
+                      return_queue))
+    p.start()
+    p.join()
+
+    return return_queue.get()
 
 if __name__ == '__main__':
 
