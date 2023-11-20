@@ -43,7 +43,7 @@ opacus==0.14.0
 opendp==0.6.0
 pac-synth==0.0.8
 packaging==21.3
-pandas==2.0.1
+pandas==1.4.4
 patsy==0.5.3
 Pillow==10.0.1
 pip-autoremove==0.10.0
