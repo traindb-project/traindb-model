@@ -39,29 +39,40 @@ from TrainDBBaseModelRunner import TrainDBModelRunner
 warnings.filterwarnings('ignore')
 
 app = FastAPI()
-training_processes = []
 
 root_dir = Path(__file__).resolve().parent.parent
 lib_dir = root_dir.joinpath('lib').joinpath('*')
 modeltype_dir = root_dir.joinpath('models')
 model_dir = root_dir.joinpath('trained_models')
 
+def write_status(model_path, status):
+    status_file = Path(model_path).joinpath('.status')
+    with open(status_file, "w+") as f:
+        f.write(status)
+
+def read_status(model_path):
+    status_file = Path(model_path).joinpath('.status')
+    return Path(status_file).read_text()
+
 def train_model(modeltype_class, model_name, jdbc_driver_class,
                 db_url, db_user, db_pwd, select_training_data_sql, metadata):
+    model_path = get_model_path(model_name)
+    Path(model_path).mkdir(parents=True, exist_ok=True)
     jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
     conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
     curs = conn.cursor()
+    write_status(model_path, "PREPARING")
     curs.execute(select_training_data_sql)
     header = [desc[0] for desc in curs.description]
     training_data = pd.DataFrame(curs.fetchall(), columns=header)
 
     modeltype_path = get_modeltype_path(modeltype_class)
-    model_path = get_model_path(model_name)
     runner = TrainDBModelRunner()
+    write_status(model_path, "TRAINING")
     model = runner._train(modeltype_class, modeltype_path, training_data, metadata)
 
-    Path(model_path).mkdir(parents=True, exist_ok=True)
     model.save(model_path)
+    write_status(model_path, "FINISHED")
 
 def analyze_synopsis(jdbc_driver_class, db_url, db_user, db_pwd,
                      select_original_data_sql, select_synopsis_data_sql, metadata,
@@ -116,7 +127,6 @@ async def train(
                 args=(modeltype_class, model_name, jdbc_driver_class,
                       db_url, db_user, db_pwd, select_training_data_sql, metadata))
     p.start()
-    training_processes.append({"pid": p.pid, "model": model_name})
 
     return {"message": "Start training model '" + model_name + "' @ PID " + str(p.pid)}
 
@@ -202,29 +212,13 @@ def rename_model(model_name: str,
 
 @app.get("/model/{model_name}/status")
 def check_model_status(model_name: str):
-    status = "finished"
-    if training_processes:
-        proc_model = next((proc for proc in training_processes if proc["model"] == model_name), None)
-        if proc_model:
-            try:
-                p = psutil.Process(proc_model["pid"])
-                status = p.status()
-            except psutil.NoSuchProcess:
-                status = "finished"
-
+    status = "UNKNOWN"
+    model_path = get_model_path(model_name)
+    try:
+        status = read_status(model_path)
+    except Exception:
+        status = "UNKNOWN"
     return status
-
-@app.get("/status/")
-def status():
-    res = []
-    for proc in training_processes:
-        try:
-            p = psutil.Process(proc["pid"])
-            status = p.status()
-        except psutil.NoSuchProcess:
-            status = "finished"
-        res.append({"model": proc["model"], "status": status})
-    return res
 
 @app.post("/synopsis/analyze")
 async def analyze(
