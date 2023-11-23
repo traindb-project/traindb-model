@@ -52,3 +52,8 @@ class TrainDBModelRunner():
     hyperparams_info = modeltype.list_hyperparameters()
     return hyperparams_info
 
+  def _evaluate(self, real_data, synopsis_data, table_metadata):
+    from sdmetrics.reports.single_table import QualityReport
+    quality_report = QualityReport()
+    quality_report.generate(real_data, synopsis_data, table_metadata)
+    return quality_report
