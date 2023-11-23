@@ -1,1 +1,1 @@
-{"schema":"instacart_small","options":{"epochs":1,"log_level":"debug"},"fields":{"reordered":{"subtype":"integer","type":"numerical"},"add_to_cart_order":{"subtype":"integer","type":"numerical"}},"table":"order_products"}
+{"schema":"instacart_small","options":{"epochs":1},"fields":{"reordered":{"subtype":"integer","type":"numerical"},"add_to_cart_order":{"subtype":"integer","type":"numerical"}},"table":"order_products"}

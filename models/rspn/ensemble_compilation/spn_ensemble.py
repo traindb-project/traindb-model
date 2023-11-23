@@ -222,7 +222,6 @@ def read_ensemble(ensemble_locations, build_reverse_dict=False):
                 logging.debug(f"Including SPN with table_set {spn.table_set} with sampling ratio"
                               f"({spn.full_sample_size} / {spn.full_join_size})")
                 # logging.debug(f"Stats: ({get_structure_stats(spn.mspn)})")
-                # build reverse dict.
                 if build_reverse_dict:
                     _build_reverse_spn_dict(spn)
                 ensemble.add_spn(spn)
@@ -605,6 +604,7 @@ class SPNEnsemble:
     def add_spn(self, spn):
         """Add an SPN to ensemble"""
         self.spns.append(spn)
+        return self
 
     def _cardinality_greedy(self, query, rdc_spn_selection=False, rdc_attribute_dict=None, dry_run=False,
                             merge_indicator_exp=True, exploit_overlapping=False, return_factor_values=False,
@@ -694,33 +694,6 @@ class SPNEnsemble:
                                     result_tuples_translated]
 
         return group_bys_scopes, result_tuples, result_tuples_translated
-
-    # def predict(self, conditions, regression_column):
-    #     """
-    #     Conditions
-    #     :param conditions: dictionary of table, tuple condition pairs
-    #     :param feature:
-    #     :return:
-    #     """
-    #
-    #     max_where_conditions = -1
-    #     prediction_spn = None
-    #
-    #     for spn in self.spns:
-    #         # if spn contains all features consider it a candidate
-    #         if regression_column in spn.column_names:
-    #
-    #             where_conditions = [condition for condition in conditions if condition[0] in spn.table_set]
-    #
-    #             if len(where_conditions) > max_where_conditions:
-    #                 prediction_spn = spn
-    #                 max_where_conditions = len(where_conditions)
-    #
-    #     assert prediction_spn is not None, "Did not find SPN offering this feature"
-    #
-    #     ranges = prediction_spn._parse_conditions(conditions)
-    #
-    #     return prediction_spn.predict(ranges, regression_column)
 
     def evaluate_query(self, query, rdc_spn_selection=False, pairwise_rdc_path=None,
                        dry_run=False, merge_indicator_exp=True, max_variants=10,

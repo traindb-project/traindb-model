@@ -92,6 +92,6 @@ python tools/TrainDBCliModelRunner.py infer RSPN models/RSPN.py output/ "COUNT(*
 
 ### Demo
 
-For demo and detailed explanation, see [Colab](https://colab.research.google.com/drive/1L1LnldEuD0pkVfxqt6-ELRxkc-DfskT1?usp=sharing).
+For demo and detailed explanation, see [Notebook](https://github.com/kihyuk-nam/traindb-model/blob/main/rspn.ipynb).
 
 You can run the test codes directly from the GitHub codespaces. The instructions are the same as mentioned above.
