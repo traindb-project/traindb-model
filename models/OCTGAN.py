@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from sdgym.synthesizers.utils import BGMTransformer
+from octgan.transformers import BGMTransformer
 from octgan.networks import Generator, Discriminator
 from octgan.utils import *
 

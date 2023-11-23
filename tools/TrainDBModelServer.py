@@ -16,13 +16,14 @@ import argparse
 import io
 import json
 import logging
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 import os
 from pathlib import Path
 import signal
 import sys
 import time
 from typing import Optional
+import warnings
 import zipfile
 
 from fastapi import FastAPI, File, Form, UploadFile
@@ -35,30 +36,64 @@ import uvicorn
 
 from TrainDBBaseModelRunner import TrainDBModelRunner
 
+warnings.filterwarnings('ignore')
+
 app = FastAPI()
-training_processes = []
 
 root_dir = Path(__file__).resolve().parent.parent
 lib_dir = root_dir.joinpath('lib').joinpath('*')
 modeltype_dir = root_dir.joinpath('models')
 model_dir = root_dir.joinpath('trained_models')
 
+def write_status(model_path, status):
+    status_file = Path(model_path).joinpath('.status')
+    with open(status_file, "w+") as f:
+        f.write(status)
+
+def read_status(model_path):
+    status_file = Path(model_path).joinpath('.status')
+    return Path(status_file).read_text()
+
 def train_model(modeltype_class, model_name, jdbc_driver_class,
                 db_url, db_user, db_pwd, select_training_data_sql, metadata):
+    model_path = get_model_path(model_name)
+    Path(model_path).mkdir(parents=True, exist_ok=True)
     jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
     conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
     curs = conn.cursor()
+    write_status(model_path, "PREPARING")
     curs.execute(select_training_data_sql)
     header = [desc[0] for desc in curs.description]
     training_data = pd.DataFrame(curs.fetchall(), columns=header)
 
     modeltype_path = get_modeltype_path(modeltype_class)
-    model_path = get_model_path(model_name)
     runner = TrainDBModelRunner()
+    write_status(model_path, "TRAINING")
     model = runner._train(modeltype_class, modeltype_path, training_data, metadata)
 
-    Path(model_path).mkdir(parents=True, exist_ok=True)
     model.save(model_path)
+    write_status(model_path, "FINISHED")
+
+def analyze_synopsis(jdbc_driver_class, db_url, db_user, db_pwd,
+                     select_original_data_sql, select_synopsis_data_sql, metadata,
+                     return_queue):
+    jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
+    conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
+    curs_orig = conn.cursor()
+    curs_orig.execute(select_original_data_sql)
+    header_orig = [desc[0] for desc in curs_orig.description]
+    original_data = pd.DataFrame(curs_orig.fetchall(), columns=header_orig)
+
+    curs_syn = conn.cursor()
+    curs_syn.execute(select_synopsis_data_sql)
+    header_syn = [desc[0] for desc in curs_syn.description]
+    synopsis_data = pd.DataFrame(curs_syn.fetchall(), columns=header_syn)
+
+    runner = TrainDBModelRunner()
+    quality_report = runner._evaluate(original_data, synopsis_data, metadata)
+    column_shapes = quality_report.get_details(property_name='Column Shapes')
+
+    return_queue.put(column_shapes.to_json(orient='records'))
 
 def get_modeltype_path(modeltype_name: str):
     return str(modeltype_dir.joinpath(modeltype_name+'.py'))
@@ -92,7 +127,6 @@ async def train(
                 args=(modeltype_class, model_name, jdbc_driver_class,
                       db_url, db_user, db_pwd, select_training_data_sql, metadata))
     p.start()
-    training_processes.append({"pid": p.pid, "model": model_name})
 
     return {"message": "Start training model '" + model_name + "' @ PID " + str(p.pid)}
 
@@ -178,29 +212,34 @@ def rename_model(model_name: str,
 
 @app.get("/model/{model_name}/status")
 def check_model_status(model_name: str):
-    status = "finished"
-    if training_processes:
-        proc_model = next((proc for proc in training_processes if proc["model"] == model_name), None)
-        if proc_model:
-            try:
-                p = psutil.Process(proc_model["pid"])
-                status = p.status()
-            except psutil.NoSuchProcess:
-                status = "finished"
-
+    status = "UNKNOWN"
+    model_path = get_model_path(model_name)
+    try:
+        status = read_status(model_path)
+    except Exception:
+        status = "UNKNOWN"
     return status
 
-@app.get("/status/")
-def status():
-    res = []
-    for proc in training_processes:
-        try:
-            p = psutil.Process(proc["pid"])
-            status = p.status()
-        except psutil.NoSuchProcess:
-            status = "finished"
-        res.append({"model": proc["model"], "status": status})
-    return res
+@app.post("/synopsis/analyze")
+async def analyze(
+        jdbc_driver_class: str = Form(...),
+        db_url: str = Form(...),
+        db_user: str = Form(...),
+        db_pwd: str = Form(...),
+        select_original_data_sql: str = Form(...),
+        select_synopsis_data_sql: str = Form(...),
+        metadata_file: UploadFile = File(...)):
+
+    metadata = json.loads(metadata_file.file.read())
+    return_queue = Queue()
+    p = Process(target=analyze_synopsis,
+                args=(jdbc_driver_class, db_url, db_user, db_pwd,
+                      select_original_data_sql, select_synopsis_data_sql, metadata,
+                      return_queue))
+    p.start()
+    p.join()
+
+    return return_queue.get()
 
 if __name__ == '__main__':
 
@@ -209,6 +248,8 @@ if __name__ == '__main__':
                         help='IP address of the TrainDB Model Server REST API')
     parser.add_argument('--port', default='58080',
                         help='port of the TrainDB Model Server REST API')
+    parser.add_argument('--workers', type=int, default=4,
+                        help='the number of worker processes')
     parser.add_argument('--ssl_keyfile', nargs='?', default='')
     parser.add_argument('--ssl_certfile', nargs='?', default='')
 
@@ -234,10 +275,12 @@ if __name__ == '__main__':
     # prerequisite: pip install fastapi uvicorn python-multipart
     # testing: launch browser with "http://0.0.0.0:58080" then see hello message
     if len(args.ssl_keyfile) > 0 and len(args.ssl_certfile) > 0:
-        uvicorn.run(app, host=args.host, port=int(args.port),
-                    ssl_keyfile=args.ssl_keyfile, ssl_certfile=args.ssl_certfile)
+        uvicorn.run("__main__:app", host=args.host, port=int(args.port),
+                    ssl_keyfile=args.ssl_keyfile, ssl_certfile=args.ssl_certfile,
+                    workers=args.workers)
     else:
-        uvicorn.run(app, host=args.host, port=int(args.port))
+        uvicorn.run("__main__:app", host=args.host, port=int(args.port),
+                    workers=args.workers)
 
     sys.exit("Shutting down, bye bye!")
 
