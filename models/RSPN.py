@@ -422,8 +422,7 @@ class RSPN(TrainDBInferenceModel):
                     if contains_nan:
                         assert (real_data[attribute] == unique_null_val).any(), "Null value cannot be found"
 
-        # TODO Find out why the following lines create an error #4
-        """
+        # TODO Find out why the following lines create an error (traindb-model/issue #4)
         # remove categorical columns with too many entries from relevant tables and dataframe
         relevant_attributes = [x for x in relevant_attributes if x not in del_cat_attributes]
         logger.info("Relevant attributes for table {} are {}".format(table_name, relevant_attributes))
@@ -433,15 +432,15 @@ class RSPN(TrainDBInferenceModel):
 
         assert len(relevant_attributes) == len(meta_data['null_values_column']), \
             "Length of NULL values does not match"
+        """
         meta_data['relevant_attributes'] = relevant_attributes
         meta_data['relevant_attributes_full'] = [table_name + '.' + attr for attr in relevant_attributes]
         meta_data['length'] = len(real_data) * 1 / table_sample_rate
-
+        """
         assert not real_data.isna().any().any(), "Still contains null values"
 
         logger.debug(f"table_name:{table_name}")
         logger.debug(f"relevant_attributes:{relevant_attributes}")
-        """
 
         return real_data, meta_data, relevant_attributes, del_cat_attributes
 
