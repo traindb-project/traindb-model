@@ -1,3 +1,4 @@
+absl-py==1.4.0
 annotated-types==0.5.0
 antlr4-python3-runtime==4.9.3
 anyio==3.7.1
@@ -10,6 +11,7 @@ charset-normalizer==3.2.0
 click==8.1.7
 cloudpickle==2.2.1
 compress-pickle==2.1.0
+contextlib2==21.6.0
 contourpy==1.1.1
 copulas==0.7.0
 ctgan==0.5.2
@@ -35,6 +37,7 @@ kiwisolver==1.4.5
 lark-parser==0.12.0
 llvmlite==0.41.0
 matplotlib==3.7.3
+ml-collections==0.1.1
 mpmath==1.3.0
 networkx==2.6.3
 numba==0.58.0

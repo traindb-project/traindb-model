@@ -25,6 +25,7 @@ from torch.utils.data import DataLoader
 from stasy import datasets, losses, sampling
 from stasy.configs.default_tabular_configs import get_default_configs
 from stasy.utils import apply_activate, setup_sde
+from stasy.models import ncsnpp_tabular
 from stasy.models import utils as mutils
 from stasy.models.ema import ExponentialMovingAverage
 from stasy.models.tabular_utils import GeneralTransformer
