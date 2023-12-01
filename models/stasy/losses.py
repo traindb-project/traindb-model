@@ -20,8 +20,8 @@ from pickle import FALSE
 import torch
 import torch.optim as optim
 import numpy as np
-from models import utils as mutils
-from sde_lib import VESDE, VPSDE
+from stasy.models import utils as mutils
+from stasy.sde_lib import VESDE, VPSDE
 import logging
 
 def get_optimizer(config, params):
@@ -146,7 +146,7 @@ def get_step_fn(sde, train, optimize_fn=None, reduce_mean=False, continuous=True
         q_alpha = torch.tensor(alpha0 + torch.log( torch.tensor(1+ 0.0001718*state['step']* (1-alpha0), dtype=torch.float32) )).clamp_(max=1).to(nll.device)
         q_beta = torch.tensor(beta0 + torch.log( torch.tensor(1+ 0.0001718*state['step']* (1-beta0), dtype=torch.float32) )).clamp_(max=1).to(nll.device)
         logging.info(f"q_alpha: {q_alpha}, q_beta: {q_beta}")
-        writer.add_scalars("quatiles", {"q_alpha":q_alpha.item(), "q_beta": q_beta.item()}, state['step'])
+        #writer.add_scalars("quatiles", {"q_alpha":q_alpha.item(), "q_beta": q_beta.item()}, state['step'])
 
         alpha = torch.quantile(nll, q_alpha) 
         beta = torch.quantile(nll, q_beta)
@@ -159,7 +159,7 @@ def get_step_fn(sde, train, optimize_fn=None, reduce_mean=False, continuous=True
         logging.info(f"weighted samples: { torch.sum((v != 1) * (v != 0)  )} / {len(v)}")
         logging.info(f"0 samples: {torch.sum(v == 0)} / {len(v)}")
 
-        writer.add_scalars("thresholds", {"alpha":alpha.item(), "beta": beta.item()}, state['step'])
+        #writer.add_scalars("thresholds", {"alpha":alpha.item(), "beta": beta.item()}, state['step'])
 
       else:
         loss = torch.mean(losses)
@@ -203,4 +203,4 @@ def compute_v(ll, alpha, beta):
   else:
         v[torch.eq(v, -1)] = torch.tensor(0.5, device=v.device)
 
-  return v  
+  return v

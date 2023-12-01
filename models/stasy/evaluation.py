@@ -413,8 +413,8 @@ def _evaluate_binary_classification(train, test, metadata):
                         "macro_f1": macro_f1
                     }
                 )
-            scores_std = pd.DataFrame(scores).std(axis=0)
-            scores = pd.DataFrame(scores).mean(axis=0)
+            scores_std = pd.DataFrame(scores).std(axis=0, numeric_only=True)
+            scores = pd.DataFrame(scores).mean(axis=0, numeric_only=True)
             scores['name'] = model_repr
             scores_std['name'] = model_repr
 

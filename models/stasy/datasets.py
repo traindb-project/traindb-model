@@ -17,10 +17,8 @@
 """Return training and evaluation/test datasets from config files."""
 import torch
 import numpy as np
-import tensorflow as tf
-import tensorflow_datasets as tfds
-from models.tabular_utils import GeneralTransformer
-from datasets_tabular import load_data
+from stasy.models.tabular_utils import GeneralTransformer
+from stasy.datasets_tabular import load_data
 
 
 def get_data_scaler(config):
@@ -48,7 +46,6 @@ def get_dataset(config, uniform_dequantization=False, evaluation=False):
 
 
   shuffle_buffer_size = 10000
-  prefetch_size = tf.data.experimental.AUTOTUNE
   num_epochs = None if not evaluation else 1
 
   # Create dataset builders for tabular data.
@@ -61,4 +58,4 @@ def get_dataset(config, uniform_dequantization=False, evaluation=False):
   test = transformer.transform(test)
 
   return train_data, test, (transformer, cols[2])
-    
+

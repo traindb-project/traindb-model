@@ -4,6 +4,7 @@ import logging
 import tensorflow as tf
 import torch.nn.functional as F
 
+from stasy import sde_lib
 
 
 def restore_checkpoint(ckpt_dir, state, device):
@@ -55,3 +56,23 @@ def apply_activate(data, output_info):
         else:
             assert 0
     return torch.cat(data_t, dim=1)
+
+
+def setup_sde(config):
+    sde = None
+    sampling_eps = 0
+
+    if config.training.sde.lower() == 'vpsde':
+        sde = sde_lib.VPSDE(beta_min=config.model.beta_min, beta_max=config.model.beta_max, N=config.model.num_scales)
+        sampling_eps = 1e-3
+    elif config.training.sde.lower() == 'subvpsde':
+        sde = sde_lib.subVPSDE(beta_min=config.model.beta_min, beta_max=config.model.beta_max, N=config.model.num_scales)
+        sampling_eps = 1e-3
+    elif config.training.sde.lower() == 'vesde':
+        sde = sde_lib.VESDE(sigma_min=config.model.sigma_min, sigma_max=config.model.sigma_max, N=config.model.num_scales)
+        sampling_eps = 1e-5
+    else:
+        raise NotImplementedError(f"SDE {config.training.sde} unknown.")
+
+    return sde, sampling_eps
+

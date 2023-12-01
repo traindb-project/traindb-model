@@ -20,7 +20,7 @@
 import torch
 import numpy as np
 from scipy import integrate
-from models import utils as mutils
+from stasy.models import utils as mutils
 
 
 def get_div_fn(fn):
