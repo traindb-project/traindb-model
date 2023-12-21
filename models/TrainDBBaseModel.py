@@ -53,7 +53,7 @@ class TrainDBModel(abc.ABC):
     pass
 
   def list_hyperparameters():
-    pass
+    return []
 
 class TrainDBSynopsisModel(TrainDBModel, abc.ABC):
   """Base class for all the ``TrainDB`` synopsis generation models."""
