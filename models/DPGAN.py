@@ -30,9 +30,10 @@ class DPGAN(TrainDBSynopsisModel, PytorchDPSynthesizer):
 
     def train(self, real_data, table_metadata):
         self.columns, categorical_columns = self.get_columns(real_data, table_metadata)
+        epsilon = self.model.kwargs.get('epsilon', 1.0)
 
         LOGGER.info("Training %s", self.__class__.__name__)
-        self.model = PytorchDPSynthesizer(1.0, snsynthDPGAN(**self.model_kwargs), None)
+        self.model = PytorchDPSynthesizer(epsilon, snsynthDPGAN(**self.model_kwargs), None)
         self.model.fit(real_data, categorical_columns=real_data.columns.values.tolist()) 
 
     def save(self, output_path):
