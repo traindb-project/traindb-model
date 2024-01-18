@@ -8,7 +8,7 @@ def get_default_configs():
   config.seed = 42
   config.device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
   config.baseline = False
-  
+
   # training
   config.training = training = ml_collections.ConfigDict()
   config.training.batch_size = 1000
@@ -18,8 +18,11 @@ def get_default_configs():
   training.snapshot_freq_for_preemption = 100
   training.snapshot_sampling = True
   training.likelihood_weighting = False
+
+  training.sde = 'vesde'
   training.continuous = True
   training.reduce_mean = False
+  training.n_iters = 100000
   training.eps = 1e-05
   training.loss_weighting = False
   training.spl = True
@@ -39,9 +42,14 @@ def get_default_configs():
   sampling.probability_flow = True
   sampling.snr = 0.16
 
+  sampling.method = 'ode'
+  sampling.predictor = 'euler_maruyama'
+  sampling.corrector = 'none'
+
   # evaluation
   config.eval = evaluate = ml_collections.ConfigDict()
   evaluate.num_samples = 22560
+  evaluate.batch_size = 1000
 
   # data
   config.data = data = ml_collections.ConfigDict()
@@ -55,6 +63,20 @@ def get_default_configs():
   model.num_scales = 50
   model.alpha0 = 0.3
   model.beta0 = 0.95
+
+  model.layer_type = 'concatsquash'
+  model.name = 'ncsnpp_tabular'
+  model.scale_by_sigma = False
+  model.ema_rate = 0.9999
+  model.activation = 'elu'
+
+  model.nf = 64
+  model.hidden_dims = (256, 512, 1024, 1024, 512, 256)
+  model.conditional = True
+  model.embedding_type = 'fourier'
+  model.fourier_scale = 16
+  model.conv_size = 3
+
   
   # optimization
   config.optim = optim = ml_collections.ConfigDict()
@@ -68,5 +90,6 @@ def get_default_configs():
 
   # test
   config.test = test = ml_collections.ConfigDict()
+  test.n_iter = 1
 
   return config

@@ -9,6 +9,8 @@ from spn.structure.StatisticalTypes import MetaType
 from rspn.rspn.structure.leaves import IdentityNumericLeaf, Categorical
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 MAX_UNIQUE_LEAF_VALUES = 10000
 
 
@@ -28,7 +30,9 @@ def learn_mspn(
         cpus=-1
 ):
     """
-    Adapts normal learn_mspn to use custom identity leafs and use sampling for structure learning.
+    Adapts normal learn_mspn to use custom identity leafs 
+    and use sampling for structure learning.
+    
     :param max_sampling_threshold_rows:
     :param max_sampling_threshold_cols:
     :param data:
@@ -53,8 +57,10 @@ def learn_mspn(
     from rspn.rspn.learning.structure_learning import get_next_operation, learn_structure
 
     def l_mspn(data, ds_context, cols, rows, min_instances_slice, threshold, ohe):
-        split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_cols, cols,
-                                                         rows, ohe, threshold, rand_gen, cpus)
+        split_cols, split_rows = get_splitting_functions(max_sampling_threshold_rows, 
+                                                         max_sampling_threshold_cols, 
+                                                         cols, rows, ohe, threshold, 
+                                                         rand_gen, cpus)
 
         nextop = get_next_operation(min_instances_slice)
 
@@ -125,6 +131,7 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
     if isinstance(cols, str):
 
         if cols == "rdc":
+            logger.debug(f"split columns by rdc")
             split_cols = get_split_cols_RDC_py(max_sampling_threshold_cols=max_sampling_threshold_cols,
                                                threshold=threshold,
                                                rand_gen=rand_gen, ohe=ohe, n_jobs=n_jobs)
@@ -140,6 +147,7 @@ def get_splitting_functions(max_sampling_threshold_rows, max_sampling_threshold_
         if rows == "rdc":
             split_rows = get_split_rows_RDC_py(rand_gen=rand_gen, ohe=ohe, n_jobs=n_jobs)
         elif rows == "kmeans":
+            logger.debug(f"split rows by kmeans")
             split_rows = get_split_rows_KMeans(max_sampling_threshold_rows=max_sampling_threshold_rows)
         elif rows == "tsne":
             split_rows = get_split_rows_TSNE()
@@ -161,10 +169,10 @@ def get_split_rows_KMeans(max_sampling_threshold_rows, n_clusters=2, pre_proc=No
         if data.shape[0] > max_sampling_threshold_rows:
             data_sample = data[np.random.randint(data.shape[0], size=max_sampling_threshold_rows), :]
 
-            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+            kmeans = KMeans(n_init=10, n_clusters=n_clusters, random_state=seed)
             clusters = kmeans.fit(data_sample).predict(data)
         else:
-            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+            kmeans = KMeans(n_init=10, n_clusters=n_clusters, random_state=seed)
             clusters = kmeans.fit_predict(data)
 
         cluster_centers = kmeans.cluster_centers_

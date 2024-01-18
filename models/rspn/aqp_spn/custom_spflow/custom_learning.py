@@ -204,10 +204,10 @@ def get_split_rows_KMeans(max_sampling_threshold_rows, n_clusters=2, pre_proc=No
         if data.shape[0] > max_sampling_threshold_rows:
             data_sample = data[np.random.randint(data.shape[0], size=max_sampling_threshold_rows), :]
 
-            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+            kmeans = KMeans(n_init=10, n_clusters=n_clusters, random_state=seed)
             clusters = kmeans.fit(data_sample).predict(data)
         else:
-            kmeans = KMeans(n_clusters=n_clusters, random_state=seed)
+            kmeans = KMeans(n_init=10, n_clusters=n_clusters, random_state=seed)
             clusters = kmeans.fit_predict(data)
 
         cluster_centers = kmeans.cluster_centers_

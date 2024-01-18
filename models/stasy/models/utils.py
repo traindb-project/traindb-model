@@ -17,7 +17,7 @@
 """
 
 import torch
-import sde_lib
+from stasy import sde_lib
 import numpy as np
 
 
