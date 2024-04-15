@@ -42,18 +42,19 @@ $> python tools/TrainDBCliModelRunner.py synopsis TableGAN models/TableGAN.py ou
 
 Similarly, you can train inference models and run queries as follows:
 ```
-python tools/TrainDBCliModelRunner.py train RSPN \
+$> python tools/TrainDBCliModelRunner.py train RSPN \
        models/RSPN.py \
        tests/test_dataset/instacart_small/data.csv \
        tests/test_dataset/instacart_small/metadata.json \
        output/
 
 // SELECT COUNT(*) FROM order_products GROUP BY reordered WHERE add_to_cart_order < 12
-python tools/TrainDBCliModelRunner.py infer RSPN models/RSPN.py output/ "COUNT(*)" "reordered" "add_to_cart_order < 12"
+$> python tools/TrainDBCliModelRunner.py infer RSPN models/RSPN.py output/ "COUNT(*)" "reordered" "add_to_cart_order < 12"
 ```
 
 ### Demo
 
 For demo and detailed explanation, see [Notebook](https://github.com/kihyuk-nam/traindb-model/blob/main/rspn.ipynb).
+
 You can run the test codes directly from the GitHub codespaces. The instructions are the same as mentioned above.
 
