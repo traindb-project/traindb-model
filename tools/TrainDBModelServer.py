@@ -205,7 +205,7 @@ def import_model(model_name: str,
 
 @app.post("/model/{model_name}/rename")
 def rename_model(model_name: str,
-                 new_model_name: str):
+                 new_model_name: str = Form(...)):
     model_path = get_model_path(model_name)
     new_path = Path(model_path).parent.joinpath(new_model_name)
     os.rename(model_path, new_path)
