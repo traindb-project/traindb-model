@@ -116,6 +116,17 @@ class RSPN(TrainDBInferenceModel):
         self.schema = schema
         self.spn_ensemble = SPNEnsemble(schema).add_spn(aqp_spn)
 
+    def incremental_learn(self, incremental_data, table_metadata):
+        columns, categoricals = self.get_columns(incremental_data, table_metadata)
+        incremental_data = incremental_data[columns]
+        self.columns = columns
+        table_size = len(incremental_data)
+
+        logger.info(f"Incremental learing size : {table_size}")
+        aqp_spn = self.spn_ensemble.spns[0]
+        aqp_spn.learn_incremental(incremental_data.to_numpy())
+        self.spn_ensemble.spns[0] = aqp_spn
+        
     def save(self, output_path):
         """
         saves the learned model (spn_ensemble) as two files in the output_path
