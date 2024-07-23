@@ -248,6 +248,8 @@ if __name__ == '__main__':
                         help='IP address of the TrainDB Model Server REST API')
     parser.add_argument('--port', default='58080',
                         help='port of the TrainDB Model Server REST API')
+    parser.add_argument('--timeout_keep_alive', default='86400',
+                        help='keepalive timeout for connections')
     parser.add_argument('--workers', type=int, default=4,
                         help='the number of worker processes')
     parser.add_argument('--ssl_keyfile', nargs='?', default='')
@@ -276,10 +278,12 @@ if __name__ == '__main__':
     # testing: launch browser with "http://0.0.0.0:58080" then see hello message
     if len(args.ssl_keyfile) > 0 and len(args.ssl_certfile) > 0:
         uvicorn.run("__main__:app", host=args.host, port=int(args.port),
+                    timeout_keep_alive=int(args.timeout_keep_alive),
                     ssl_keyfile=args.ssl_keyfile, ssl_certfile=args.ssl_certfile,
                     workers=args.workers)
     else:
         uvicorn.run("__main__:app", host=args.host, port=int(args.port),
+                    timeout_keep_alive=int(args.timeout_keep_alive),
                     workers=args.workers)
 
     sys.exit("Shutting down, bye bye!")
