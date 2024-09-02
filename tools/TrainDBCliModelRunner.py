@@ -43,6 +43,7 @@ import pandas as pd
 import json
 import sys
 import csv
+from datasets import load_dataset
 
 def main():
   root_parser = argparse.ArgumentParser(description='TrainDB CLI Model Runner')
@@ -84,10 +85,12 @@ def main():
   args = root_parser.parse_args()
   runner = TrainDBCliModelRunner()
   if args.cmd == 'train':
-    data_file = pd.read_csv(args.data_file)
+    data_file = load_dataset("csv", data_files=args.data_file)
+    data_file.set_format(type="pandas")
+    df_train = data_file["train"][:]
     with open(args.metadata_file) as metadata_file:
       table_metadata = json.load(metadata_file)
-    runner.train_model(args.modeltype_class, args.modeltype_uri, data_file, table_metadata, args.model_path)
+    runner.train_model(args.modeltype_class, args.modeltype_uri, df_train, table_metadata, args.model_path)
     sys.exit(0)
   elif args.cmd == 'synopsis':
     syn_data = runner.generate_synopsis(args.modeltype_class, args.modeltype_uri, args.model_path, args.row_count)
