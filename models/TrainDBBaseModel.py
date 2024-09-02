@@ -40,6 +40,7 @@ class TrainDBModel(abc.ABC):
 
     return model_columns, categorical_columns
 
+  @staticmethod
   def createHyperparameter(name, datatype, default_value, comment):
     return TrainDBModel.Hyperparameter(name, datatype, default_value, comment)._asdict()
 
@@ -52,6 +53,7 @@ class TrainDBModel(abc.ABC):
   def load(self, input_path):
     pass
 
+  @staticmethod
   def list_hyperparameters():
     return []
 
