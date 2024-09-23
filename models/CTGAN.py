@@ -25,6 +25,7 @@ LOGGER = logging.getLogger(__name__)
 class CTGAN(TrainDBSynopsisModel):
 
     def __init__(self, **kwargs):
+        kwargs.setdefault("verbose", "True")
         self.model_kwargs = kwargs
 
     def train(self, real_data, table_metadata):
