@@ -32,13 +32,6 @@ class TrainDBModelRunner():
     model.train(real_data, table_metadata)
     return model
 
-  def _incremental_learn(self, modeltype_class, modeltype_path, model_path, incremental_data, table_metadata, args=[], kwargs={}):
-    mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)()
-    model.load(model_path)
-    model.incremental_learn(incremental_data, table_metadata)
-    return model
-  
   def _synthesize(self, modeltype_class, modeltype_path, model_path, row_count):
     mod = self._load_module(modeltype_class, modeltype_path)
     model = getattr(mod, modeltype_class)()
