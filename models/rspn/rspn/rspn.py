@@ -14,7 +14,6 @@ from rspn.rspn.structure.leaves import IdentityNumericLeaf, identity_expectation
     identity_likelihood_range
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 
 def build_ds_context(column_names, meta_types, null_values, table_meta_data, no_compression_scopes, train_data,
@@ -112,7 +111,7 @@ class RSPN:
                                       no_compression_scopes, train_data)
         self.ds_context = ds_context
         domain_end_t = time.perf_counter()
-        logger.debug(f"Built domains in {domain_end_t - domain_start_t} sec")
+        logging.debug(f"Built domains in {domain_end_t - domain_start_t} sec")
 
         # learn mspn
         learn_start_t = time.perf_counter()
@@ -124,7 +123,7 @@ class RSPN:
         assert is_valid(self.mspn, check_ids=True)
         learn_end_t = time.perf_counter()
         self.learn_time = learn_end_t - learn_start_t
-        logger.debug(f"Built SPN in {learn_end_t - learn_start_t} sec")
+        logging.debug(f"Built SPN in {learn_end_t - learn_start_t} sec")
 
         # statistics
         self.rdc_threshold = rdc_threshold
