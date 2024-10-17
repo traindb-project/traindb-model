@@ -74,6 +74,24 @@ def train_model(modeltype_class, model_name, jdbc_driver_class,
     model.save(model_path)
     write_status(model_path, "FINISHED")
 
+def incremental_learn(modeltype_class, model_name, jdbc_driver_class,
+                db_url, db_user, db_pwd, select_training_data_sql, metadata):
+    jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
+    conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
+    curs = conn.cursor()
+    ## select additional dataset (modification is required!)
+    curs.execute(select_training_data_sql)
+    header = [desc[0] for desc in curs.description]
+    incremental_data = pd.DataFrame(curs.fetchall(), columns=header)
+
+    modeltype_path = get_modeltype_path(modeltype_class)
+    model_path = get_model_path(model_name)
+    runner = TrainDBModelRunner()
+    model = runner._incremental_learn(modeltype_class, modeltype_path, model_path, incremental_data, metadata)
+
+    Path(model_path).mkdir(parents=True, exist_ok=True)
+    model.save(model_path)   
+    
 def analyze_synopsis(jdbc_driver_class, db_url, db_user, db_pwd,
                      select_original_data_sql, select_synopsis_data_sql, metadata,
                      return_queue):
@@ -129,6 +147,26 @@ async def train(
     p.start()
 
     return {"message": "Start training model '" + model_name + "' @ PID " + str(p.pid)}
+
+@app.post("/modeltype/{modeltype_class}/incremental_learn")
+async def incremental_learn(
+        modeltype_class: str,
+        model_name: str = Form(...),
+        jdbc_driver_class: str = Form(...),
+        db_url: str = Form(...),
+        db_user: str = Form(...),
+        db_pwd: str = Form(...),
+        select_training_data_sql: str = Form(...),
+        metadata_file: UploadFile = File(...)):
+
+    metadata = json.loads(metadata_file.file.read())
+    p = Process(target=incremental_learn,
+                args=(modeltype_class, model_name, jdbc_driver_class,
+                      db_url, db_user, db_pwd, select_training_data_sql, metadata))
+    p.start()
+    training_processes.append({"pid": p.pid, "model": model_name})
+
+    return {"message": "Start incremental_learn model '" + model_name + "' @ PID " + str(p.pid)}
 
 def convert_str(s: str):
     if len(s.strip()) == 0:
