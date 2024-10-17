@@ -12,6 +12,7 @@
    limitations under the License.
 """
 
+import ast
 import logging
 import os
 import rdt
