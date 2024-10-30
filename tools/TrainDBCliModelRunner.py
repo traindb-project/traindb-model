@@ -22,9 +22,9 @@ class TrainDBCliModelRunner(TrainDBModelRunner):
     model = super()._train(modeltype_class, modeltype_path, real_data, table_metadata, args, kwargs)
     model.save(model_path)
 
-  def incremental_learn(self, modeltype_class, modeltype_path, model_path, incremental_data, table_metadata, args=[], kwargs={}):
+  def incremental_learn(self, modeltype_class, modeltype_path, model_path, incremental_data, table_metadata, new_model_path, args=[], kwargs={}):
     model = super()._incremental_learn(modeltype_class, modeltype_path, model_path, incremental_data, table_metadata, args, kwargs)
-    model.save(model_path)
+    model.save(new_model_path)
 
   def generate_synopsis(self, modeltype_class, modeltype_path, model_path, row_count):
     syn_data = super()._synthesize(modeltype_class, modeltype_path, model_path, row_count)
@@ -64,7 +64,8 @@ def main():
   parser_train.add_argument('modeltype_uri', type=str, help='(str) path for local model, or uri for remote model')
   parser_train.add_argument('data_file', type=str, help='(str) path to .csv data file')
   parser_train.add_argument('metadata_file', type=str, help='(str) path to .json table metadata file')
-  parser_train.add_argument('model_path', type=str, help='(str) path to model')
+  parser_train.add_argument('model_path', type=str, help='(str) path to old model')
+  parser_train.add_argument('new_model_path', type=str, help='(str) path to new model')
 
   parser_synopsis = subparsers.add_parser('synopsis', help='generate synopsis command')
   parser_synopsis.add_argument('modeltype_class', type=str, help='(str) modeltype class name')
@@ -139,7 +140,7 @@ def main():
     data_file = pd.read_csv(args.data_file)
     with open(args.metadata_file) as metadata_file:
       table_metadata = json.load(metadata_file)  
-    runner.incremental_learn(args.modeltype_class, args.modeltype_uri, args.model_path, data_file, table_metadata, args.model_path)  
+    runner.incremental_learn(args.modeltype_class, args.modeltype_uri, args.model_path, data_file, table_metadata, args.new_model_path)
     sys.exit(0)      
   else:
     root_parser.print_help()
