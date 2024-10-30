@@ -88,8 +88,8 @@ class AQPSPN(CombineSPN, RSPN):
         :return:
         """
 
-        logging.info(f"Incremental adding {len(data)} datasets to SPN ...")
-        print(f"Incremental adding {len(data)} datasets to SPN ...")
+        logging.info(f"Incremental learning {len(data)} rows to SPN ...")
+        print(f"Incremental learning {len(data)} rows to SPN ...")
         add_ds_start_t = perf_counter()
         # per_inc_start_t = perf_counter()
         i = 0
@@ -97,14 +97,15 @@ class AQPSPN(CombineSPN, RSPN):
             self.add_dataset(ds)
             if i % 10000 == 0:
                 logging.debug(f"\t{i}/{len(data)}")
-                print(f"\t{i}/{len(data)} : {(perf_counter() - add_ds_start_t)} secs.")
+                print("  {}/{} : {:0.3f} secs.".format(
+                    i, len(data), (perf_counter() - add_ds_start_t)))
             i += 1
         logging.debug(f"{i}/{len(data)} ")
         add_ds_end_t = perf_counter()
-        logging.info(
-            "f{len(data)} datasets inserted in {(add_ds_end_t - add_ds_start_t)} secs. ({(add_ds_end_t - add_ds_start_t)/len(data)} sec./dataset")
-        print(
-            f"{len(data)} datasets inserted in {(add_ds_end_t - add_ds_start_t)} secs. ({(add_ds_end_t - add_ds_start_t)/len(data)} sec./dataset")
+        logging.info("{} rows have been learned in {:0.3f} secs.".format(
+            len(data), (add_ds_end_t - add_ds_start_t)))
+        print("{} rows have been learned in {:0.3f} secs.".format(
+            len(data), (add_ds_end_t - add_ds_start_t)))
 
         return self
 
