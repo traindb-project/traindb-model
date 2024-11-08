@@ -12,6 +12,7 @@
    limitations under the License.
 """
 
+import ast
 import logging
 import rdt
 import sdv
@@ -25,6 +26,12 @@ LOGGER = logging.getLogger(__name__)
 class TVAE(TrainDBSynopsisModel):
 
     def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+          try:
+            kwargs[key] = ast.literal_eval(value)
+          except (ValueError, SyntaxError):
+            pass
+
         self.model_kwargs = kwargs
 
     def train(self, real_data, table_metadata):
