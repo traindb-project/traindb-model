@@ -12,6 +12,7 @@
    limitations under the License.
 """
 
+import ast
 import logging
 import rdt
 from rdt.transformers import *
@@ -35,6 +36,12 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
  
         self.ht = rdt.HyperTransformer()
         self.columns = []
+
+        random_dim = ast.literal_eval(str(random_dim))
+        num_channles = ast.literal_eval(str(num_channels))
+        l2scale = ast.literal_eval(str(l2scale))
+        batch_size = ast.literal_eval(str(batch_size))
+        epochs = ast.literal_eval(str(epochs))
 
         super().__init__(random_dim, num_channels, l2scale, batch_size, epochs)
 
