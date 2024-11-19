@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader
 
 from stasy import datasets, losses, sampling
 from stasy.configs.default_tabular_configs import get_default_configs
-from stasy.utils import apply_activate, setup_sde
+from stasy.utils import apply_activate, setup_sde, EWC
 from stasy.models import ncsnpp_tabular
 from stasy.models import utils as mutils
 from stasy.models.ema import ExponentialMovingAverage
@@ -55,6 +55,7 @@ class STASY(TrainDBSynopsisModel):
         self.config.data.image_size = len(real_data.columns)
         config = self.config
 
+        # Initialize model
         score_model = mutils.create_model(config)
         ema = ExponentialMovingAverage(score_model.parameters(), decay=config.model.ema_rate)
         optimizer = losses.get_optimizer(config, score_model.parameters())
@@ -75,17 +76,14 @@ class STASY(TrainDBSynopsisModel):
         logging.info(score_model)
 
         optimize_fn = losses.optimization_manager(config)
-        continuous = config.training.continuous
         reduce_mean = config.training.reduce_mean
         likelihood_weighting = config.training.likelihood_weighting
 
         sde, sampling_eps = setup_sde(config)
 
         train_step_fn = losses.get_step_fn(sde, train=True, optimize_fn=optimize_fn,
-                                           reduce_mean=reduce_mean, continuous=continuous,
-                                           likelihood_weighting=likelihood_weighting,
-                                           spl=config.training.spl,
-                                           alpha0=config.model.alpha0, beta0=config.model.beta0)
+                                           reduce_mean=reduce_mean,
+                                           likelihood_weighting=likelihood_weighting)
 
         logging.info("Starting training loop at epoch %d." % (initial_step,))
         scores_max = 0
@@ -96,6 +94,71 @@ class STASY(TrainDBSynopsisModel):
                 batch = batch.to(config.device).float()
                 loss = train_step_fn(state, batch) 
        
+            logging.info("epoch: %d, iter: %d, training_loss: %.5e" % (epoch, iteration, loss.item()))
+            print("epoch: %d, iter: %d, training_loss: %.5e" % (epoch, iteration, loss.item()))
+
+    def incremental_learn(self, incremental_data, table_metadata):
+        columns, categoricals = self.get_columns(incremental_data, table_metadata)
+        incremental_data = incremental_data[columns]
+        self.columns = columns
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        inc_epochs = self.config.training.epoch
+        if 'options' in table_metadata and 'epochs' in table_metadata['options']:
+            inc_epochs = table_metadata['options']['epochs']
+
+        sampling_num = 0
+        if 'trained_rows' in table_metadata:
+            sampling_num = table_metadata['trained_rows']
+
+        table_size = len(incremental_data)
+        logging.info(f"Incremental learing size : {table_size}")
+
+        config = self.config
+        transformer = self.transformer
+        score_model = mutils.create_model(config)
+
+        metric = 'macro_f1'
+        inverse_scaler = datasets.get_data_inverse_scaler(config)
+
+        optimize_fn = losses.optimization_manager(config)
+        reduce_mean = config.training.reduce_mean
+        likelihood_weighting = config.training.likelihood_weighting
+
+        sde, sampling_eps = setup_sde(config)
+
+        ema = ExponentialMovingAverage(score_model.parameters(), decay=config.model.ema_rate)
+        ema.store(score_model.parameters())
+        ema.copy_to(score_model.parameters())
+
+        sampling_shape = (sampling_num, len(self.columns))
+        sampling_fn = sampling.get_sampling_fn(config, sde, sampling_shape, inverse_scaler, sampling_eps)
+        samples, n = sampling_fn(score_model, sampling_shape=sampling_shape)
+        samples = apply_activate(samples, transformer.output_info)
+        samples = transformer.inverse_transform(samples.cpu().numpy())
+
+        loss_fn = losses.get_sde_loss_fn(sde, train=False, )
+        ewc = EWC(self.state, torch.tensor(samples, device=self.device, dtype=torch.float32), loss_fn)
+
+        ema.restore(score_model.parameters())
+        logging.info(f"sampled data from old generator: {  collections.Counter(samples[:, -1])    }")
+
+        train_data = np.concatenate([samples, incremental_data])
+        train_data = torch.tensor(train_data, device=self.device, requires_grad=True)
+
+        train_iter = DataLoader(train_data, batch_size=config.training.batch_size)
+        train_step_fn = losses.get_step_fn(sde, train=True, optimize_fn=optimize_fn,
+                                           reduce_mean=reduce_mean,
+                                           likelihood_weighting=likelihood_weighting)
+
+        initial_epoch = self.state['epoch']
+        final_epoch = initial_epoch + inc_epochs
+        for epoch in range(initial_epoch, final_epoch):
+            self.state['epoch'] += 1
+            for iteration, batch in enumerate(train_iter):
+                batch = batch.to(config.device).float()
+                loss = train_step_fn(self.state, batch, ewc)
+
             logging.info("epoch: %d, iter: %d, training_loss: %.5e" % (epoch, iteration, loss.item()))
             print("epoch: %d, iter: %d, training_loss: %.5e" % (epoch, iteration, loss.item()))
        
@@ -114,10 +177,20 @@ class STASY(TrainDBSynopsisModel):
         torch.save(saved_state, os.path.join(output_path, 'model.pth'))
 
     def load(self, input_path):
-        self.state = torch.load(os.path.join(input_path, 'model.pth'))
-        self.config = self.state['config']
-        self.transformer = self.state['transformer']
-        self.columns = self.state['columns']
+        loaded_state = torch.load(os.path.join(input_path, 'model.pth'))
+        self.config = loaded_state['config']
+        self.transformer = loaded_state['transformer']
+        self.columns = loaded_state['columns']
+
+        score_model = mutils.create_model(self.config)
+        ema = ExponentialMovingAverage(score_model.parameters(), decay=self.config.model.ema_rate)
+        optimizer = losses.get_optimizer(self.config, score_model.parameters())
+        optimizer.load_state_dict(loaded_state['optimizer'])
+        score_model.load_state_dict(loaded_state['model'])
+        ema.load_state_dict(loaded_state['ema'])
+
+        self.state = dict(optimizer=optimizer, model=score_model, ema=ema,
+                          step=loaded_state['step'], epoch=loaded_state['epoch'])
 
     def synopsis(self, row_count):
 

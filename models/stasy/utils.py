@@ -1,6 +1,9 @@
+from copy import deepcopy
 import os
 import torch
 import logging
+from torch import nn
+from torch.autograd import Variable
 import torch.nn.functional as F
 
 from stasy import sde_lib
@@ -75,3 +78,84 @@ def setup_sde(config):
 
     return sde, sampling_eps
 
+
+def variable(t: torch.Tensor, use_cuda=True, **kwargs):
+    if torch.cuda.is_available() and use_cuda:
+        t = t.cuda()
+    else:
+        t = t.cpu()
+    return Variable(t, **kwargs)
+
+class EWC(object):
+    def __init__(self, model: nn.Module, dataset: list, loss_fn):
+
+        self.model = model['model']
+        self.optimizer = model['optimizer']
+        self.dataset = dataset
+        self.loss_fn = loss_fn
+
+        self.params = {n: p for n, p in self.model.named_parameters() if p.requires_grad}
+        self._means = {}
+        self._precision_matrices = self._diag_fisher()
+        self.prune_per = 0.2
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        for n, p in deepcopy(self.params).items():
+            self._means[n] = variable(p.data)
+
+    def _diag_fisher(self):
+        precision_matrices = {}
+        for n, p in deepcopy(self.params).items():
+            p.data.zero_()
+            precision_matrices[n] = variable(p.data)
+
+        self.model.eval()
+        self.optimizer.zero_grad()
+        losses = self.loss_fn(self.model, self.dataset)
+        loss = torch.mean(losses) # + penalty
+        loss.backward()
+
+        try:
+            for n, p in self.model.named_parameters():
+                if p.requires_grad:
+                    precision_matrices[n].data += p.grad.data ** 2 / len(self.dataset)
+        except:
+            pass
+
+        precision_matrices = {n: p for n, p in precision_matrices.items()}
+        self.model.train()
+
+        return precision_matrices
+
+    def penalty(self, model: nn.Module):
+        loss = torch.tensor(0., device=self.device, requires_grad=True)
+        for n, p in model.named_parameters():
+            if p.requires_grad:
+                temp = torch.sum(self._precision_matrices[n] * (p - self._means[n]) ** 2)
+                loss = loss + temp
+        return loss
+
+    def prune_weight(self, model: nn.Module):
+        num_pruned_params = 0
+        for n, p in model.named_parameters():
+            if p.requires_grad:
+                mask = self._precision_matrices[n] <= torch.quantile(self._precision_matrices[n], self.prune_per)
+                p[mask] = 0. #  = torch.tensor(0., device='cuda')
+                p = p.to_sparse()
+                num_pruned_params += torch.sum(mask)
+        return model, num_pruned_params
+
+def ewc_train(model: nn.Module, optimizer: torch.optim, data_loader: torch.utils.data.DataLoader,
+              ewc: EWC, importance: float):
+    use_cuda = True if self.device == 'cuda' else False
+    model.train()
+    epoch_loss = 0
+    for input, target in data_loader:
+        input, target = variable(input, use_cuda), variable(target, use_cuda)
+        optimizer.zero_grad()
+        output = model(input)
+        loss = F.cross_entropy(output, target) + importance * ewc.penalty(model)
+        epoch_loss += loss.data[0]
+        loss.backward()
+        optimizer.step()
+    return epoch_loss / len(data_loader)

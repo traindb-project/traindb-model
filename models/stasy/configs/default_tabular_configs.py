@@ -11,8 +11,8 @@ def get_default_configs():
 
   # training
   config.training = training = ml_collections.ConfigDict()
-  config.training.batch_size = 1000
-  training.epoch = 10000
+  config.training.batch_size = 10000
+  training.epoch = 2000
   training.snapshot_freq = 300
   training.eval_freq = 100
   training.snapshot_freq_for_preemption = 100
@@ -22,23 +22,22 @@ def get_default_configs():
   training.sde = 'vesde'
   training.continuous = True
   training.reduce_mean = False
-  training.n_iters = 100000
   training.eps = 1e-05
   training.loss_weighting = False
-  training.spl = True
+  training.spl = False
   training.lambda_ = 0.5
 
   #fine_tune
   training.eps_iters = 50
   training.fine_tune_epochs = 50
-  training.retrain_type = 'median'
+  training.retrain_type = 'mean'
   training.hutchinson_type = 'Rademacher'
   training.tolerance = 1e-03
   
   # sampling
   config.sampling = sampling = ml_collections.ConfigDict()
   sampling.n_steps_each = 1
-  sampling.noise_removal = True
+  sampling.noise_removal = False
   sampling.probability_flow = True
   sampling.snr = 0.16
 
@@ -49,7 +48,6 @@ def get_default_configs():
   # evaluation
   config.eval = evaluate = ml_collections.ConfigDict()
   evaluate.num_samples = 22560
-  evaluate.batch_size = 1000
 
   # data
   config.data = data = ml_collections.ConfigDict()
@@ -60,6 +58,8 @@ def get_default_configs():
   config.model = model = ml_collections.ConfigDict()
   model.sigma_min = 0.01
   model.sigma_max = 10.
+  model.beta_min = 0.01
+  model.beta_max = 10.
   model.num_scales = 50
   model.alpha0 = 0.3
   model.beta0 = 0.95
@@ -90,6 +90,5 @@ def get_default_configs():
 
   # test
   config.test = test = ml_collections.ConfigDict()
-  test.n_iter = 1
 
   return config
