@@ -61,18 +61,22 @@ def train_model(modeltype_class, model_name, jdbc_driver_class,
     jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
     conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
     curs = conn.cursor()
-    write_status(model_path, "PREPARING")
-    curs.execute(select_training_data_sql)
-    header = [desc[0] for desc in curs.description]
-    training_data = pd.DataFrame(curs.fetchall(), columns=header)
 
-    modeltype_path = get_modeltype_path(modeltype_class)
-    runner = TrainDBModelRunner()
-    write_status(model_path, "TRAINING")
-    model = runner._train(modeltype_class, modeltype_path, training_data, metadata)
+    try:
+        write_status(model_path, "PREPARING")
+        curs.execute(select_training_data_sql)
+        header = [desc[0] for desc in curs.description]
+        training_data = pd.DataFrame(curs.fetchall(), columns=header)
 
-    model.save(model_path)
-    write_status(model_path, "FINISHED")
+        modeltype_path = get_modeltype_path(modeltype_class)
+        runner = TrainDBModelRunner()
+        write_status(model_path, "TRAINING")
+        model = runner._train(modeltype_class, modeltype_path, training_data, metadata)
+
+        model.save(model_path)
+        write_status(model_path, "FINISHED")
+    except Exception as e:
+        write_status(model_path, "FAILED")
 
 def incremental_learn(modeltype_class, model_name, jdbc_driver_class,
                       db_url, db_user, db_pwd, select_training_data_sql,
@@ -82,20 +86,24 @@ def incremental_learn(modeltype_class, model_name, jdbc_driver_class,
     jpype.startJVM(classpath = str(lib_dir), convertStrings=True)
     conn = jaydebeapi.connect(jdbc_driver_class, db_url, [ db_user, db_pwd ])
     curs = conn.cursor()
-    write_status(model_path, "PREPARING")
-    curs.execute(select_training_data_sql)
-    header = [desc[0] for desc in curs.description]
-    incremental_data = pd.DataFrame(curs.fetchall(), columns=header)
 
-    modeltype_path = get_modeltype_path(modeltype_class)
-    ex_model_path = get_model_path(ex_model_name)
-    runner = TrainDBModelRunner()
-    write_status(model_path, "TRAINING")
-    model = runner._incremental_learn(
-        modeltype_class, modeltype_path, ex_model_path, incremental_data, metadata)
+    try:
+        write_status(model_path, "PREPARING")
+        curs.execute(select_training_data_sql)
+        header = [desc[0] for desc in curs.description]
+        incremental_data = pd.DataFrame(curs.fetchall(), columns=header)
 
-    model.save(model_path)   
-    write_status(model_path, "FINISHED")
+        modeltype_path = get_modeltype_path(modeltype_class)
+        ex_model_path = get_model_path(ex_model_name)
+        runner = TrainDBModelRunner()
+        write_status(model_path, "TRAINING")
+        model = runner._incremental_learn(
+            modeltype_class, modeltype_path, ex_model_path, incremental_data, metadata)
+
+        model.save(model_path)
+        write_status(model_path, "FINISHED")
+    except Exception as e:
+        write_status(model_path, "FAILED")
     
 def analyze_synopsis(jdbc_driver_class, db_url, db_user, db_pwd,
                      select_original_data_sql, select_synopsis_data_sql, metadata,
