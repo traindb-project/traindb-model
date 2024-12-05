@@ -18,6 +18,7 @@ from rspn.aqp_spn.aqp_spn import AQPSPN
 from rspn.evaluation.utils import handle_aggregation
 from rspn.ensemble_compilation.graph_representation import Query, QueryType
 from spn.structure.StatisticalTypes import MetaType
+import ast
 import numpy as np
 import os
 import sqlparse
@@ -58,7 +59,7 @@ class RSPN(TrainDBInferenceModel):
         self.spn_ensemble = None
 
         # fields from DeepDB_Home/maqp.py
-        self.rdc_threshold = rdc_threshold
+        self.rdc_threshold = ast.literal_eval(str(rdc_threshold))
         # TODO the following fields are not being used here. clean up unnecessary ones
         self.strategy = strategy
         self.samples_per_spn = samples_per_spn
