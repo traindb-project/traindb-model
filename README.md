@@ -54,7 +54,7 @@ $> python tools/TrainDBCliModelRunner.py infer RSPN models/RSPN.py output/ "COUN
 
 ### Demo
 
-For demo and detailed explanation, see [Notebook](https://github.com/kihyuk-nam/traindb-model/blob/main/rspn.ipynb).
+For demo and detailed explanation, see [Notebook](https://github.com/traindb-project/traindb-model/blob/main/models/rspn/rspn.ipynb).
 
 You can run the test codes directly from the GitHub codespaces. The instructions are the same as mentioned above.
 
